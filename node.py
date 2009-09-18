@@ -4,9 +4,6 @@ class Node:
         self.content = []
 
 
-
-
-
 class FileNode(Node):
     def __init__(self, indent=None):
         Node.__init__(self, indent) 
