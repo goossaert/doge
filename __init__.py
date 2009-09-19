@@ -1,5 +1,5 @@
 """
-pydoge - python docstring generator 
+Python docstring generator.
 """
 __docformat__ = "restructuredtext en"
 
