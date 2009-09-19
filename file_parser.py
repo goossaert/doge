@@ -6,14 +6,19 @@ from node import *
 class Parser:
     pattern_indent = re.compile(
         r"""
-        (?P<indent>[\s]*?)
+        (?P<indent>[\s]*)
         .*?
         """, re.VERBOSE | re.DOTALL)
 
     pattern_class = re.compile(
         r"""
         (?P<indent>[\s]*?)
-        class[ ].*?
+        class[\s]*?
+        (?P<name>[_\w]*?)
+            (\(
+            (?P<definition>[\s\,\w\=]*)
+            \))?
+        [\s]*?[:][\s]*?
         """, re.VERBOSE | re.DOTALL)
 
     pattern_function = re.compile(
@@ -22,7 +27,7 @@ class Parser:
         def[\s]*?
         (?P<name>[_\w]*?)
             \(
-            (?P<parameters>[\s\,\w\=]*)
+            (?P<definition>[\s\,\w\=]*)
             \)
         [\s]*?[:][\s]*?
         """, re.VERBOSE | re.DOTALL)
@@ -61,21 +66,29 @@ class Parser:
         self.nodes.append(self.node_file)
 
         for line in file:
+            if self.nodes[-1].indent_children == None and line.strip() != '':
+                indent = self.pattern_indent.match(line).group('indent')
+                self.nodes[-1].indent_children = len(indent)
+                #print 'line', '|'+indent+'|', len(indent), self.nodes[-1].indent, line
+
             #print 'handling:', line
             node = None
+            match = None
             if self.pattern_class.match(line):
-                print 'class'
                 match = self.pattern_class.match(line)
-                indent = match.group('indent') 
-                node = ClassNode(len(indent))
+                node = ClassNode()
             elif self.pattern_function.match(line):
-                print 'function'
                 match = self.pattern_function.match(line)
-                indent = match.group('indent') 
-                definition = match.group('parameters')
-                node = FunctionNode(len(indent), definition)
+                node = FunctionNode()
+
 
             if node:
+                # Filling the node
+                node.indent = len(match.group('indent'))
+                node.name = match.group('name')
+                node.definition = match.group('definition')
+                
+                # Modifying the state of the parser
                 self._pop_nodes(node)
                 node.parent = self.nodes[-1]
                 self.nodes[-1].content.append(node)
@@ -85,15 +98,10 @@ class Parser:
                 node_code.content = line
                 node_code.parent = self.nodes[-1]
                 self.nodes[-1].content.append(node_code)
-                if self.nodes[-1].indent_children == None and not line.strip():
-                    print 'line', line
-                    indent = self.pattern_indent.match(line).group('indent')
-                    self.nodes[-1].indent_children = len(indent)
+
 
 
     def _print(self, node):
-        print node, node.indent
-        print node.content
         if isinstance(node, FileNode) or isinstance(node, ClassNode) or isinstance(node, FunctionNode):
             for sub in node.content:
                 self._print(sub)
@@ -104,12 +112,10 @@ class Parser:
 
 
     def build_structure(self):
-        print 'build'
         stack = [self.node_file] 
         while stack:
             node_parent = stack.pop()
             for node in node_parent.content:
-                print node
                 if node.to_explore:
                     stack.append(node)
                 else: 
@@ -117,12 +123,10 @@ class Parser:
                     if match_self:
                         node_class = node.find_parent_class()
                         node_class.variables_instance[match_self.group('name')] = ''
-                        print 'instance', match_self.group('name')
 
                     match_assignment = self.pattern_assignment.match(node.content)
                     if match_assignment and isinstance(node_parent, ClassNode):
                             node_parent.variables_class[match_assignment.group('name')] = ''
-                            print 'class', match_assignment.group('name')
                             # TODO handle return
                             # TODO handle raise
                             pass

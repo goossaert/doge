@@ -10,4 +10,5 @@ if __name__ == '__main__':
     writer = Writer()
     writer.write(parser.node_file)
     pass
+    print ''.join(writer.buffer)
 
