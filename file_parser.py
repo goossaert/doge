@@ -1,5 +1,5 @@
 """
-pydoge - python docstring generator 
+Python docstring generator.
 """
 __docformat__ = "restructuredtext en"
 
@@ -32,6 +32,7 @@ class Parser:
         .*?
         """, re.VERBOSE | re.DOTALL)
 
+
     pattern_class = re.compile(
         r"""
         (?P<indent>[\s]*?)
@@ -42,6 +43,7 @@ class Parser:
             \))?
         [\s]*?[:][\s]*?
         """, re.VERBOSE | re.DOTALL)
+
 
     pattern_function = re.compile(
         r"""
@@ -54,13 +56,14 @@ class Parser:
         [\s]*?[:][\s]*?
         """, re.VERBOSE | re.DOTALL)
 
+
     pattern_assignment = re.compile(
         r"""
         (?P<indent>[\s]*?)
         (?P<name>[_\w]*?)
         [\s]*?[=][\s]*.*?
         """, re.VERBOSE | re.DOTALL)
-        #([\s]*?#[\s]*?)
+
 
     pattern_self = re.compile(
         r"""
@@ -69,6 +72,7 @@ class Parser:
         (?P<name>[_\w]*?)
         [\s]*?[=][\s]*.*?
         """, re.VERBOSE | re.DOTALL)
+
 
     def __init__(self):
         self.module = None
@@ -87,13 +91,28 @@ class Parser:
         self.node_file = FileNode(-1)
         self.nodes.append(self.node_file)
 
+        in_docstring = False
         for line in file:
+            if in_docstring:
+                # Handling docstrings
+                self.nodes[-1].docstring.append(line)
+                if line.strip().endswith('"""'):
+                    # Exiting docstrings
+                    in_docstring = False
+                continue  
+
             if self.nodes[-1].indent_children == None and line.strip() != '':
                 indent = self.pattern_indent.match(line).group('indent')
                 self.nodes[-1].indent_children = len(indent)
-                #print 'line', '|'+indent+'|', len(indent), self.nodes[-1].indent, line
 
-            #print 'handling:', line
+                if line.strip().startswith('"""'):
+                    # Entering docstrings
+                    self.nodes[-1].docstring.append(line)
+                    if len(line.strip()) < 6 or not line.strip().endswith('"""'):
+                        # If this is not a one line docstring, then switch the flag
+                        in_docstring = True 
+                    continue
+
             node = None
             match = None
             if self.pattern_class.match(line):
@@ -102,7 +121,6 @@ class Parser:
             elif self.pattern_function.match(line):
                 match = self.pattern_function.match(line)
                 node = FunctionNode()
-
 
             if node:
                 # Filling the node
@@ -133,6 +151,7 @@ class Parser:
         self._print(self.node_file)
 
 
+    # TODO check if this is possible to put all this in the node classes.
     def build_structure(self):
         stack = [self.node_file] 
         while stack:

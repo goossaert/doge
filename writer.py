@@ -1,5 +1,5 @@
 """
-pydoge - python docstring generator 
+Python docstring generator.
 """
 __docformat__ = "restructuredtext en"
 
@@ -29,9 +29,12 @@ class Writer:
     def __init__(self):
         pass
 
+    # TODO check if this is possible to put all this in the node classes.
     def write(self, node_file):
         for node in node_file.content:
             if node.to_explore: 
+                # TODO careful here, the order of docstring and definition is
+                # up to every language and/or documentation system
                 self.buffer.append(node.make_prototype() + '\n')
                 docstring = node.make_docstring()
                 if docstring:

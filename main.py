@@ -22,6 +22,7 @@ __docformat__ = "restructuredtext en"
 
 from file_parser import Parser
 from writer import Writer
+from python import PythonFactory
 
 if __name__ == '__main__':
     parser = Parser()
@@ -34,3 +35,13 @@ if __name__ == '__main__':
     pass
     print ''.join(writer.buffer)
 
+    ds = ['    truc\n',
+          '        description\n',
+          '    test : type\n',
+          '                 \n',
+          '    vide\n',
+          '    bombe\n',
+          '        interesring\n']
+
+    factory = PythonFactory()
+    factory.parse_parameter_sequence(None, ds)

@@ -1,5 +1,5 @@
 """
-pydoge - python docstring generator 
+Python docstring generator.
 """
 __docformat__ = "restructuredtext en"
 
@@ -20,6 +20,9 @@ __docformat__ = "restructuredtext en"
 ## You should have received a copy of the GNU General Public License
 ## along with pydoge.  If not, see <http://www.gnu.org/licenses/>.
 
+
+from python import PythonFactory
+
 class Node:
     def __init__(self, indent=None, to_explore=False):
         self.indent = indent
@@ -27,23 +30,38 @@ class Node:
         self.content = []
         self.parent = None
         self.to_explore = to_explore
+        self.generator = PythonFactory()
 
     def find_parent_class(self):
         return self.parent.find_parent_class()
 
+
     def find_parent_function(self):
         return self.parent.find_parent_function()
 
+
     def make_docstring(self):
-        return None
+        pass
+
+
+    def parse_docstring(self):
+        pass
+
 
 
 class FileNode(Node):
     def __init__(self, indent=None):
         Node.__init__(self, indent, to_explore=True) 
+        self.docstring = []
 
     def find_parent_function(self):
         return None
+
+    def make_docstring(self):
+        return self.generator.make_docstring_file(self)
+
+    def parse_docstring(self, node):
+        return self.generator.parse_docstring_file(self)
 
 
 class ClassNode(Node):
@@ -54,54 +72,23 @@ class ClassNode(Node):
         self.variables_class = {}
         self.variables_instance = {}
         self.description = ''
+        self.docstring = []
 
     def find_parent_class(self):
         return self
 
 
     def make_docstring(self):
-        if not self.variables_class and not self.variables_instance:
-            return ''
-
-        doc_variable = '-%s%s\n\
-                        -%s%s\n'.replace(' ','')
-
-        doc_section = '\n\
-                        -%(indent)s:%(section)s:\n\
-                        -%(variables)s'.replace(' ','')
-
-        doc_function = '-%(indent)s"""\n\
-                        -%(indent)s%(description)s%(content)s\
-                        -%(indent)s"""\n'.replace(' ', '')
-
-        #
-
-        # TODO factorize with make_docstring for functions
-        diff = self.indent_children - self.indent
-        indent_name = ' ' * (self.indent_children + diff)
-        indent_description = ' ' * (self.indent_children + diff * 2)
-        indent = ' ' * self.indent_children
-
-        var_class = [doc_variable % (indent_name, name, indent_description, description) for name, description in self.variables_class.items()]
-        var_class_content = doc_section % {'indent': indent, 'section': 'CVariable', 'variables': ''.join(var_class)}
-
-        var_instance = [doc_variable % (indent_name, name, indent_description, description) for name, description in self.variables_instance.items()]
-        var_instance_content = doc_section % {'indent': indent, 'section': 'IVariable', 'variables': ''.join(var_instance)}
-
-        content = ''
-        if var_class:
-            content += var_class_content
-
-        if var_instance:
-            content += var_instance_content
-
-        return doc_function % {'indent': indent, 'description': self.description, 'content': content}
+        return self.generator.make_docstring_class(self)
 
 
     def make_prototype(self):
-        base_classes = '(' + self.definition + ')' if self.definition else ''
-        return self.indent * ' ' + 'class ' + self.name + base_classes + ':'
+        return self.generator.make_prototype_class(self)
          
+
+    def parse_docstring(self, node):
+        return self.generator.parse_docstring_class(self)
+
 
 
 class FunctionNode(Node):
@@ -111,6 +98,7 @@ class FunctionNode(Node):
         self.definition = definition
         self.parameters = {}
         self.description = ''
+        self.docstring = []
 
 
     def find_parent_function(self):
@@ -118,31 +106,17 @@ class FunctionNode(Node):
 
 
     def make_docstring(self):
-        if not self.parameters:
-            return ''
+        return self.generator.make_docstring_function(self)
 
-        doc_parameter = '%s%s\n\
-                         %s%s\n\n'.replace(' ','')
-
-        doc_function = '%(indent)s"""\n\
-                        %(indent)s%(description)s\n\
-                        \n\
-                        %(indent)s:Parameters:\n\
-                        %(parameters)s\n\
-                        %(indent)s"""\n'.replace(' ','')
-
-        diff = self.indent_children - self.indent
-        indent_name = ' ' * (self.indent_children + diff)
-        indent_description = ' ' * (self.indent_children + diff * 2)
-        indent = ' ' * self.indent_children
-
-        parameters = [doc_parameter % (indent_name, name, indent_description, description) for name, description in self.parameters.items()]
-
-        return doc_function % {'indent': indent, 'description': self.description, 'parameters': ''.join(parameters)}
 
     def make_prototype(self):
-        return self.indent * ' ' + 'def ' + self.name + '(' + self.definition + ')' + ':'
+        return self.generator.make_prototype_function(self)
+
+
+    def parse_docstring(self, node):
+        return self.generator.parse_docstring_function(self)
          
+
          
 class CodeNode(Node):
     def __init__(self, indent=None):
