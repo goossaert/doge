@@ -23,6 +23,28 @@ __docformat__ = "restructuredtext en"
 
 import re
 
+
+pattern_indent = re.compile(
+    r"""
+    (?P<indent>[\s]*)
+    .*?
+    """, re.VERBOSE | re.DOTALL)
+
+
+pattern_sequence = re.compile(
+    r"""
+    (?P<indent>[\s]*)
+    [:]
+    (?P<title>[\w]*)
+    ([\s]*(?P<option>[\w]*))?
+    [:]
+    .*?
+    """, re.VERBOSE | re.DOTALL)
+
+
+
+
+
 class PythonFactory:
     def __init__(self):
         pass
@@ -102,32 +124,83 @@ class PythonFactory:
 
 
     def parse_docstring_file(self, node):
-        pass
+        self.parse_sections(node, node.docstring)
 
 
     def parse_docstring_class(self, node):
-        pass
+        self.parse_sections(node, node.docstring)
 
 
     def parse_docstring_function(self, node):
+        self.parse_sections(node, node.docstring)
+
+
+    def parse_sections(self, node, docstring):
+        sequences = {}
+        id_sequence = None
+        option_current = None
+        sequence_current = None
+        sequences_text = ['Returns', 'Raises']
+        sequences_parameter = ['IVariables', 'CVariables', 'Parameters']
+
+        for id_line, line in enumerate(docstring):
+            # look for sequences and end of docstring
+            if line.strip().startswith(':') and line.strip().endswith(':') \
+              or line.strip() == '"""':
+                # sequence detected
+                if sequence_current:
+                    # already in a sequence, hence we have to treat it before
+                    # setting up the new one
+                    parser = self.parse_sequence_text if sequence_current in sequences_text else self.parse_sequence_parameter
+                    content = parser(node, docstring[id_sequence + 1:id_line])
+                    content.append(option_current)
+                    sequences[sequence_current] = content
+                     
+                match = pattern_sequence.match(line)
+                if match:
+                    sequence_current = match.group('title')
+                    option_current = match.group('option')
+                id_sequence = id_line
         pass
 
 
-    def parse_section(self, node, docstring):
-        pass
+
+    def _strip_docstring(self, docstring):
+        # skip the empty lines at the beginning of the docstring
+        id_start = None
+        for id_line, line in enumerate(docstring):
+            if not line.strip():
+                id_start = id_line + 1
+            else:
+                break
+        return docstring[id_start:]
 
 
-    def parse_parameter_sequence(self, node, docstring):
+    def parse_sequence_text(self, node, docstring):
+        docstring = self._strip_docstring(docstring)
+
+        #indent_diff = node.indent_children - node.indent
+        indent_diff = 4
+        indent_description = len(pattern_indent.match(docstring[0]).group('indent'))
+        description = ['']
+        for line in docstring:
+            indent_current = len(pattern_indent.match(line).group('indent'))
+            if indent_current == indent_description:
+                description = self._handle_description(indent_current,
+                                                       indent_description,
+                                                       line,
+                                                       description)
+        return [description]
+
+
+
+    def parse_sequence_parameter(self, node, docstring):
         if not docstring:
             return {}
 
-        pattern_indent = re.compile(
-            r"""
-            (?P<indent>[\s]*)
-            .*?
-            """, re.VERBOSE | re.DOTALL)
+        docstring = self._strip_docstring(docstring)
 
-
+        # initialize containers
         descriptions = {}
         types = {}
 
@@ -153,24 +226,34 @@ class PythonFactory:
                 # just skip the line!
                 if line.strip():
                     # the line is not empty
-                    if indent_current == indent_description and line[indent_description] != ' ':
-                        # regular description line, so just add the content
-                        space = ' ' if descriptions[parameter][-1] else ''
-                        descriptions[parameter][-1] += space + line.strip()
-                    else:
-                        # not a regular description line, so put in its own string
-                        diff = indent_current - indent_description
-                        space = ' ' * diff if diff > 0 else ''
-                        descriptions[parameter].append(space + line.strip())
-                        descriptions[parameter].append('')
-                    
+                    buffer = self._handle_description(indent_current,
+                                                      indent_description,
+                                                      line,
+                                                      descriptions[parameter])
+                    descriptions[parameter] = buffer
+
                 else:
                     # the line is empty
                     descriptions[parameter].append('\n')
                     descriptions[parameter].append('')
                  
-        print descriptions, types
-        return descriptions, types
+        return [descriptions, types]
+
+
+    def _handle_description(self, indent_current, indent_objective, line, buffer):
+        buffer = buffer[:]
+        if indent_current == indent_objective:
+            # regular description line, so just add the content
+            space = ' ' if buffer[-1] else ''
+            buffer[-1] += space + line.strip()
+        else:
+            # not a regular description line, so put in its own string
+            diff = indent_current - indent_objective
+            space = ' ' * diff if diff > 0 else ''
+            buffer.append(space + line.strip())
+            buffer.append('')
+
+        return buffer
 
 
     def make_prototype_class(self, node):

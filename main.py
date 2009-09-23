@@ -37,6 +37,7 @@ if __name__ == '__main__':
 
     ds = ['    truc\n',
           '        description\n',
+          '        on multiple lines.',
           '    test : type\n',
           '                 \n',
           '    vide\n',
@@ -44,4 +45,4 @@ if __name__ == '__main__':
           '        interesring\n']
 
     factory = PythonFactory()
-    factory.parse_parameter_sequence(None, ds)
+    factory.parse_sequence_parameter(None, ds)

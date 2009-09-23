@@ -26,6 +26,23 @@ import re
 from node import *
 
 class Parser:
+    """
+    short description.
+
+    asdfadfadf asdf adf adf asdf af
+
+    :CVariables:
+        pattern_indent
+            stuff to read
+
+    :Raises ErrorString:
+        If not in the good list.
+
+    :Returns:
+
+        dfjadf afdj adfj af adj 
+
+    """
     pattern_indent = re.compile(
         r"""
         (?P<indent>[\s]*)

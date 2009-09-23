@@ -60,7 +60,7 @@ class FileNode(Node):
     def make_docstring(self):
         return self.generator.make_docstring_file(self)
 
-    def parse_docstring(self, node):
+    def parse_docstring(self):
         return self.generator.parse_docstring_file(self)
 
 
@@ -86,7 +86,7 @@ class ClassNode(Node):
         return self.generator.make_prototype_class(self)
          
 
-    def parse_docstring(self, node):
+    def parse_docstring(self):
         return self.generator.parse_docstring_class(self)
 
 
@@ -113,7 +113,7 @@ class FunctionNode(Node):
         return self.generator.make_prototype_function(self)
 
 
-    def parse_docstring(self, node):
+    def parse_docstring(self):
         return self.generator.parse_docstring_function(self)
          
 
