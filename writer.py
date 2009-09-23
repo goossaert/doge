@@ -36,8 +36,8 @@ class Writer:
                 # TODO careful here, the order of docstring and definition is
                 # up to every language and/or documentation system
                 self.buffer.append(node.make_prototype() + '\n')
-                docstring = node.make_docstring()
                 node.parse_docstring()
+                docstring = node.make_docstring()
                 if docstring:
                     self.buffer.append(docstring)
                 self.write(node)

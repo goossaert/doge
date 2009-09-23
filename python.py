@@ -58,16 +58,16 @@ class PythonFactory:
         if not node.variables_class and not node.variables_instance:
             return ''
 
-        doc_variable = '-%s%s\n\
-                        -%s%s\n'.replace(' ','')
+        doc_variable = '%s%s\n\
+                        %s%s\n'.replace(' ','')
 
         doc_section = '\n\
-                        -%(indent)s:%(section)s:\n\
-                        -%(variables)s'.replace(' ','')
+                        %(indent)s:%(section)s:\n\
+                        %(variables)s'.replace(' ','')
 
-        doc_function = '-%(indent)s"""\n\
-                        -%(indent)s%(description)s%(content)s\
-                        -%(indent)s"""\n'.replace(' ', '')
+        doc_function = '%(indent)s"""\n\
+                        %(indent)s%(description)s%(content)s\
+                        %(indent)s"""\n'.replace(' ', '')
 
         # TODO factorize with make_docstring for functions
         diff = node.indent_children - node.indent
@@ -75,14 +75,14 @@ class PythonFactory:
         indent_description = ' ' * (node.indent_children + diff * 2)
         indent = ' ' * node.indent_children
 
-        var_class = [doc_variable % (indent_name, name, indent_description, description) for name, description in node.variables_class.items()]
+        var_class = [doc_variable % (indent_name, name, indent_description, ''.join(description)) for name, description in node.variables_class.items()]
         var_class_content = doc_section % {'indent': indent,
-                                           'section': 'CVariable',
+                                           'section': 'CVariables',
                                            'variables': ''.join(var_class)}
 
-        var_instance = [doc_variable % (indent_name, name, indent_description, description) for name, description in node.variables_instance.items()]
+        var_instance = [doc_variable % (indent_name, name, indent_description, ''.join(description)) for name, description in node.variables_instance.items()]
         var_instance_content = doc_section % {'indent': indent,
-                                              'section': 'IVariable',
+                                              'section': 'IVariables',
                                               'variables': ''.join(var_instance)}
 
         content = ''
@@ -93,7 +93,7 @@ class PythonFactory:
             content += var_instance_content
 
         return doc_function % {'indent': indent,
-                               'description': node.description,
+                               'description': ''.join(node.description),
                                'content': content}
 
 
@@ -102,13 +102,13 @@ class PythonFactory:
             return ''
 
         doc_parameter = '%s%s\n\
-                         %s%s\n\n'.replace(' ','')
+                         %s%s\n'.replace(' ','')
 
         doc_function = '%(indent)s"""\n\
                         %(indent)s%(description)s\n\
                         \n\
                         %(indent)s:Parameters:\n\
-                        %(parameters)s\n\
+                        %(parameters)s\
                         %(indent)s"""\n'.replace(' ','')
 
         indent_diff = node.indent_children - node.indent
@@ -116,27 +116,58 @@ class PythonFactory:
         indent_description = ' ' * (node.indent_children + indent_diff * 2)
         indent = ' ' * node.indent_children
 
-        parameters = [doc_parameter % (indent_name, name, indent_description, description) for name, description in node.parameters.items()]
+        parameters = [doc_parameter % (indent_name, name, indent_description, ''.join(description)) for name, description in node.parameters.items()]
 
         return doc_function % {'indent': indent,
-                               'description': node.description,
+                               'description': ''.join(node.description),
                                'parameters': ''.join(parameters)}
 
 
+    def _cleanup_parameters(self, parameters):
+        print '*** cleanup', parameters
+        strip_newline = lambda string: '' if string == '\n' else string + '\n'
+
+        for name, descriptions in parameters.items():
+            print 'before', parameters[name]
+            parameters[name] = [strip_newline(d) for d in descriptions if d]
+            print 'after', parameters[name]
+
+
+    def _fill_parameters(self, titles, sequences):
+        for title in titles:
+            (name, parameters, types) = title
+            if name in sequences:
+                parameters.update(sequences[name][0]) 
+                types.update(sequences[name][1])
+                self._cleanup_parameters(parameters)
+                self._cleanup_parameters(types)
+
+
     def parse_docstring_file(self, node):
-        self.parse_sections(node, node.docstring)
+        print '---------- parse file'
+        sequences = self.parse_sections(node)
+        titles = [('Parameters', node.parameters, node.types)]
+        self._fill_parameters(titles, sequences)
 
 
     def parse_docstring_class(self, node):
-        self.parse_sections(node, node.docstring)
+        print '---------- parse class'
+        sequences = self.parse_sections(node)
+        titles = [('CVariables', node.variables_class, node.types_class),
+                  ('IVariables', node.variables_instance, node.types_instance)]
+        self._fill_parameters(titles, sequences)
 
 
     def parse_docstring_function(self, node):
-        self.parse_sections(node, node.docstring)
+        print '---------- parse function'
+        sequences = self.parse_sections(node)
+        titles = [('Parameters', node.parameters, node.types)]
+        self._fill_parameters(titles, sequences)
 
 
-    def parse_sections(self, node, docstring):
+    def parse_sections(self, node):
         sequences = {}
+        docstring = node.docstring[:]
         id_sequence = None
         option_current = None
         sequence_current = None
@@ -161,7 +192,7 @@ class PythonFactory:
                     sequence_current = match.group('title')
                     option_current = match.group('option')
                 id_sequence = id_line
-        pass
+        return sequences
 
 
 

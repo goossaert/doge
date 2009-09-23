@@ -26,7 +26,7 @@ from python import PythonFactory
 
 if __name__ == '__main__':
     parser = Parser()
-    parser.read_file('file_parser.py')
+    parser.read_file('truc.py')
     parser.print_file()
     parser.build_structure()
     pass

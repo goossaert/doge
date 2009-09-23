@@ -52,7 +52,10 @@ class Node:
 class FileNode(Node):
     def __init__(self, indent=None):
         Node.__init__(self, indent, to_explore=True) 
+        self.description = []
         self.docstring = []
+        self.parameters = {}
+        self.types = {}
 
     def find_parent_function(self):
         return None
@@ -71,7 +74,9 @@ class ClassNode(Node):
         self.definition = definition
         self.variables_class = {}
         self.variables_instance = {}
-        self.description = ''
+        self.types_class = {}
+        self.types_instance = {}
+        self.description = []
         self.docstring = []
 
     def find_parent_class(self):
@@ -97,7 +102,8 @@ class FunctionNode(Node):
         self.name = name
         self.definition = definition
         self.parameters = {}
-        self.description = ''
+        self.types = {}
+        self.description = []
         self.docstring = []
 
 
