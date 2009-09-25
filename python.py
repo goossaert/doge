@@ -31,7 +31,7 @@ pattern_indent = re.compile(
     """, re.VERBOSE | re.DOTALL)
 
 
-pattern_sequence = re.compile(
+pattern_section = re.compile(
     r"""
     (?P<indent>[\s]*)
     [:]
@@ -41,11 +41,57 @@ pattern_sequence = re.compile(
     .*?
     """, re.VERBOSE | re.DOTALL)
 
+def find_section(name, sections):
+    for section in sections:
+        if isinstance(section, SBSection) and section.name == name:
+            return section
+    return None
+
+
+# TODO delete the SB class hierarchy
+class SB:
+    def __init__(self, padding=None):
+        self.padding = padding
+        self.sd = []
+
+    def make_docstring(self):
+        return 'empty'
+
+
+class SBParameter(SB):
+    def __init__(self, padding=None, name=None, type=None):
+        SB.__init__(self, padding)
+        self.name = name
+        self.type = type
+
+
+class SBDescription(SB):
+    def __init__(self, padding=None, text=[]):
+        SB.__init__(self, padding)
+        self.text = text
+
+
+class SBSection(SB):
+    def __init__(self, padding=None, name=None, option=None):
+        SB.__init__(self, padding)
+        self.name = name
+        self.option = option
+
+
+class SBSectionParameter(SBSection):
+    def __init__(self, padding=None, name=None, option=None):
+        SBSection.__init__(self, padding, name, option)
+        self.parameters = {}
+
+
+class SBSectionDescription(SBSection):
+    def __init__(self, padding=None, name=None, option=None):
+        SBSection.__init__(self, padding, name, option)
 
 
 
 
-class PythonFactory:
+class RestructuredTextFactory:
     def __init__(self):
         pass
 
@@ -93,20 +139,61 @@ class PythonFactory:
             content += var_instance_content
 
         return doc_function % {'indent': indent,
-                               'description': ''.join(node.description),
+                               'description': ''.join(node.descriptions[0] + ['\n'] + node.descriptions[1]),
                                'content': content}
+
+
+    def _cut_line(self, line, len_editable):
+        words = re.split('\s', line)
+        id_cut = 0
+        if len(words[0]) >= len_editable:
+            # first word bigger than the line: can't cut it!
+            id_cut = 1
+        else :
+            # else, let's decompose the line
+            len_cut = 0
+            while len_cut < len_editable:
+                id_cut += 1
+                len_cut = len(' '.join(words[:id_cut]))
+            id_cut -= 1
+
+        return words[:id_cut], words[id_cut:] 
+
+
+    def _format_lines(self, lines, len_indent, len_max=80):
+        formatted = []
+        len_editable = len_max - len_indent
+        if len_editable <= 0:
+            return lines
+        
+        for line in lines:
+            indexes = [(pos * len_editable, (pos + 1) * len_editable) for pos in range((len(lines) // len_editable) + 1)]
+            for index in indexes:
+                start = index(0)
+                end = index(1)
+                formatted.append(' ' * len_indent + line[start, end])
+                
+
+
+    def _make_docstring_description(self, node):
+        doc_description = '%s%s\n'.replace(' ','')
+        description_short = [doc_description % (indent, line) for line in node.descriptions[0]]
+        description_long = [doc_description % (indent, line) for line in node.descriptions[1]]
+
+
+    def _make_docstring_parameters(self, node, parameters):
+        doc_parameter = '%s%s\n\
+                         %s%s\n'.replace(' ','')
+        return [doc_parameter % (indent_name, name, indent_description, ''.join(description)) for name, description in parameters.items()]
 
 
     def make_docstring_function(self, node):
         if not node.parameters:
             return ''
 
-        doc_parameter = '%s%s\n\
-                         %s%s\n'.replace(' ','')
-
         doc_function = '%(indent)s"""\n\
-                        %(indent)s%(description)s\n\
-                        \n\
+                        %(description_short)s\
+                        %(description_long)s\
                         %(indent)s:Parameters:\n\
                         %(parameters)s\
                         %(indent)s"""\n'.replace(' ','')
@@ -116,10 +203,10 @@ class PythonFactory:
         indent_description = ' ' * (node.indent_children + indent_diff * 2)
         indent = ' ' * node.indent_children
 
-        parameters = [doc_parameter % (indent_name, name, indent_description, ''.join(description)) for name, description in node.parameters.items()]
+        parameters = self._make_docstring_parameters(indent_name, node, node.parameters)
 
         return doc_function % {'indent': indent,
-                               'description': ''.join(node.description),
+                               'description': ''.join(node.descriptions[0] + ['\n'] + node.descriptions[1]),
                                'parameters': ''.join(parameters)}
 
 
@@ -133,107 +220,152 @@ class PythonFactory:
             print 'after', parameters[name]
 
 
-    def _fill_parameters(self, titles, sequences):
+    def _fill_descriptions(self, node, descriptions):
+        node.descriptions = descriptions
+
+
+    def _fill_parameters(self, titles, sections):
         for title in titles:
             (name, parameters, types) = title
-            if name in sequences:
-                parameters.update(sequences[name][0]) 
-                types.update(sequences[name][1])
+            if name in sections:
+                parameters.update(sections[name][0]) 
+                types.update(sections[name][1])
                 self._cleanup_parameters(parameters)
                 self._cleanup_parameters(types)
 
 
     def parse_docstring_file(self, node):
         print '---------- parse file'
-        sequences = self.parse_sections(node)
+        self.parse_docstring(node)
+        return
         titles = [('Parameters', node.parameters, node.types)]
-        self._fill_parameters(titles, sequences)
+        self._fill_descriptions(node, descriptions)
+        self._fill_parameters(titles, sections)
 
 
     def parse_docstring_class(self, node):
         print '---------- parse class'
-        sequences = self.parse_sections(node)
+        self.parse_docstring(node)
+        return
         titles = [('CVariables', node.variables_class, node.types_class),
                   ('IVariables', node.variables_instance, node.types_instance)]
-        self._fill_parameters(titles, sequences)
+        self._fill_descriptions(node, descriptions)
+        self._fill_parameters(titles, sections)
 
 
     def parse_docstring_function(self, node):
         print '---------- parse function'
-        sequences = self.parse_sections(node)
+        self.parse_docstring(node)
+        return
         titles = [('Parameters', node.parameters, node.types)]
-        self._fill_parameters(titles, sequences)
+        self._fill_descriptions(node, descriptions)
+        self._fill_parameters(titles, sections)
 
 
-    def parse_sections(self, node):
-        sequences = {}
-        docstring = node.docstring[:]
-        id_sequence = None
+    def _find_cut(self, docstring, fct_string):
+        for id_line, line in enumerate(docstring):
+            if fct_string(line):
+                return id_line
+        return len(docstring)
+
+
+    def parse_docstring(self, node):
+        docstring = self._strip_first_empty_lines(node.docstring[1:]) # omit the starting '"""'
+        # find the cut between descriptions and sections and handle them
+        id_cut = self._find_cut(docstring, lambda s: s.strip().startswith(':'))
+        self._parse_docstring_descriptions(node, docstring[:id_cut])
+        self._parse_docstring_sections(node, docstring[id_cut:])
+
+
+    def _add_description(self, name, node, text):
+        section = SBSectionDescription(node.padding, name)
+        description = SBDescription(node.padding, text)
+        section.sd.append(description)
+        node.sf.append(section)
+
+
+    def _parse_docstring_descriptions(self, node, docstring):
+        # find the cut between short and long descriptions
+        docstring = self._strip_lines(docstring)
+        id_cut = self._find_cut(docstring, lambda s: not s.strip())
+        self._add_description('Short', node, docstring[:id_cut])
+        self._add_description('Long', node, docstring[id_cut+1:])
+
+
+    # TODO modify the function so that it first split the docstring
+    # into sections, and then treat them?
+    def _parse_docstring_sections(self, node, docstring):
+        docstring = self._strip_first_empty_lines(node.docstring[1:]) # omit the starting '"""'
+        id_section = None
         option_current = None
-        sequence_current = None
-        sequences_text = ['Returns', 'Raises']
-        sequences_parameter = ['IVariables', 'CVariables', 'Parameters']
+        section_current = None
+        sections_text = ['Returns', 'Raises']
+        sections_parameter = ['IVariables', 'CVariables', 'Parameters']
+        in_description_short = True
+        in_description_long = False
 
         for id_line, line in enumerate(docstring):
-            # look for sequences and end of docstring
-            if line.strip().startswith(':') and line.strip().endswith(':') \
-              or line.strip() == '"""':
-                # sequence detected
-                if sequence_current:
-                    # already in a sequence, hence we have to treat it before
+
+            # look for sections or end of docstring
+            if line.strip().startswith(':') or line.strip() == '"""':
+                # section, or end of docstring detected
+                if section_current:
+                    # already in a section, hence we have to treat it before
                     # setting up the new one
-                    parser = self.parse_sequence_text if sequence_current in sequences_text else self.parse_sequence_parameter
-                    content = parser(node, docstring[id_sequence + 1:id_line])
-                    content.append(option_current)
-                    sequences[sequence_current] = content
+                    sb_section = SBSection(node.padding, section_current, option_current)
+                    parser = self.parse_section_parameter if section_current in sections_parameter else self.parse_section_text
+                    sb_section.sd = parser(section_current, node, docstring[id_section + 1:id_line])
+                    node.sf.append(sb_section)
                      
-                match = pattern_sequence.match(line)
+                match = pattern_section.match(line)
                 if match:
-                    sequence_current = match.group('title')
+                    section_current = match.group('title')
                     option_current = match.group('option')
-                id_sequence = id_line
-        return sequences
+                id_section = id_line
 
 
+    def _strip_lines(self, lines):
+        return [line.strip() for line in lines]
 
-    def _strip_docstring(self, docstring):
+
+    def _strip_first_empty_lines(self, lines):
         # skip the empty lines at the beginning of the docstring
         id_start = None
-        for id_line, line in enumerate(docstring):
+        for id_line, line in enumerate(lines):
             if not line.strip():
                 id_start = id_line + 1
             else:
                 break
-        return docstring[id_start:]
+        return lines[id_start:]
 
 
-    def parse_sequence_text(self, node, docstring):
+    def parse_section_text(self, name, node, docstring):
         docstring = self._strip_docstring(docstring)
 
         #indent_diff = node.indent_children - node.indent
         indent_diff = 4
         indent_description = len(pattern_indent.match(docstring[0]).group('indent'))
-        description = ['']
+        buffer = ['']
         for line in docstring:
             indent_current = len(pattern_indent.match(line).group('indent'))
             if indent_current == indent_description:
-                description = self._handle_description(indent_current,
-                                                       indent_description,
-                                                       line,
-                                                       description)
-        return [description]
+                buffer = self._handle_description(indent_current,
+                                                  indent_description,
+                                                  line,
+                                                  buffer)
+        description = SBDescription(node.padding, buffer)
+        section = SBSectionDescription(node.padding, name)
+        section.sb.append(description)
+        node.sf.append(section)
 
 
-
-    def parse_sequence_parameter(self, node, docstring):
+    def parse_section_parameter(self, name, node, docstring):
         if not docstring:
             return {}
 
-        docstring = self._strip_docstring(docstring)
+        docstring = self._strip_first_empty_lines(docstring)
 
-        # initialize containers
-        descriptions = {}
-        types = {}
+        section = SBSectionParameter(node.padding, name)
 
         #indent_diff = node.indent_children - node.indent
         indent_diff = 4
@@ -241,17 +373,21 @@ class PythonFactory:
         indent_description = indent_parameter + indent_diff 
 
         parameter = None
+        buffer = ['']
         for line in docstring:
             indent_current = len(pattern_indent.match(line).group('indent'))
             if indent_current == indent_parameter:
                 # a new parameter has been encountered
+                if parameter:
+                    # if a parameter was being addressed, it has to be saved
+                    description = SBDescription(node.padding, buffer)
+                    parameter.sd.append(description)
+                    buffer = ['']
                 infos = re.split('[^\w]+', line.strip()) 
-                parameter = infos[0]
-                descriptions[parameter] = ['']
-                if len(infos) == 2:
-                    # the type has been defined so we save it
-                    types[parameter] = infos[1]
-
+                name = infos[0]
+                type = infos[1] if len(infos) > 1 else ''
+                parameter = SBParameter(node.padding, name, type)
+                section.sd.append(parameter)
             elif parameter:
                 # in a parameter description: if 'parameter' is not set,
                 # just skip the line!
@@ -260,17 +396,14 @@ class PythonFactory:
                     buffer = self._handle_description(indent_current,
                                                       indent_description,
                                                       line,
-                                                      descriptions[parameter])
-                    descriptions[parameter] = buffer
-
+                                                      buffer)
                 else:
                     # the line is empty
-                    descriptions[parameter].append('\n')
-                    descriptions[parameter].append('')
+                    buffer.append('\n')
+                    buffer.append('')
                  
-        return [descriptions, types]
 
-
+    # TODO rename
     def _handle_description(self, indent_current, indent_objective, line, buffer):
         buffer = buffer[:]
         if indent_current == indent_objective:

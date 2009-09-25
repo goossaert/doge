@@ -23,6 +23,9 @@ __docformat__ = "restructuredtext en"
 import io
 import re
 
+import python
+
+from python import *
 from node import *
 
 class Parser:
@@ -121,6 +124,7 @@ class Parser:
             if self.nodes[-1].indent_children == None and line.strip() != '':
                 indent = self.pattern_indent.match(line).group('indent')
                 self.nodes[-1].indent_children = len(indent)
+                self.nodes[-1].compute_padding()
 
                 if line.strip().startswith('"""'):
                     # Entering docstrings
@@ -169,6 +173,8 @@ class Parser:
 
 
     # TODO check if this is possible to put all this in the node classes.
+    # TODO handle return
+    # TODO handle raise
     def build_structure(self):
         stack = [self.node_file] 
         while stack:
@@ -179,23 +185,32 @@ class Parser:
                 else: 
                     match_self = self.pattern_self.match(node.content)
                     if match_self:
+                        # Instance variables
                         node_class = node.find_parent_class()
-                        node_class.variables_instance[match_self.group('name')] = ''
-
-                    match_assignment = self.pattern_assignment.match(node.content)
-                    if match_assignment and isinstance(node_parent, ClassNode):
-                            node_parent.variables_class[match_assignment.group('name')] = ''
-                            # TODO handle return
-                            # TODO handle raise
-                            pass
-                    
+                        section = python.find_section('IVariables', node_parent.sc)
+                        if not section:
+                            section = SBSectionParameter(node_parent.padding, 'IVariables')
+                            node_class.sc.append(section)
+                        name = match_self.group('name')[0]
+                        section.parameters[name] = SBParameter(name)
+                        #node_class.variables_instance[match_self.group('name')] = ''
+                    else:
+                        # Class variables
+                        match_assignment = self.pattern_assignment.match(node.content)
+                        if match_assignment and isinstance(node_parent, ClassNode):
+                            section = python.find_section('CVariables', node_parent.sc)
+                            if not section:
+                                section = SBSectionParameter(node_parent.padding, 'CVariables')
+                                node_parent.sc.append(section)
+                            name = match_assignment.group('name')[0]
+                            section.parameters[name] = SBParameter(name)
+                            #node_parent.variables_class[match_assignment.group('name')] = ''
                     
             if isinstance(node_parent, FunctionNode):
+                section = SBSectionParameter(node_parent.padding, 'Parameters')
                 parameters = re.split('[^\w=]+', node_parent.definition)
                 for parameter in parameters:
                     if parameter and parameter != 'self':
-                        name = re.split('[=]+', parameter)
-                        node_parent.parameters[name[0]] = ''
-
-                #fill parameters
-                pass
+                        name = re.split('[=]+', parameter, 1)
+                        section.parameters[name[0]] = SBParameter(name[0])
+                node_parent.sc.append(section)

@@ -21,16 +21,27 @@ __docformat__ = "restructuredtext en"
 ## along with pydoge.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from python import PythonFactory
+from python import RestructuredTextFactory
+
+class Padding:
+    def __init__(self, node):
+        indent_diff = node.indent_children - node.indent
+        padding_name = ' ' * (node.indent_children + indent_diff)
+        padding_description = ' ' * (node.indent_children + indent_diff * 2)
+        padding = ' ' * node.indent_children
+
 
 class Node:
     def __init__(self, indent=None, to_explore=False):
         self.indent = indent
         self.indent_children = None
         self.content = []
+        self.sf = []
+        self.sc = []
         self.parent = None
         self.to_explore = to_explore
-        self.generator = PythonFactory()
+        self.generator = RestructuredTextFactory()
+        self.padding = None
 
     def find_parent_class(self):
         return self.parent.find_parent_class()
@@ -48,11 +59,15 @@ class Node:
         pass
 
 
+    def compute_padding(self):
+        self.padding = Padding(self)
+
+
 
 class FileNode(Node):
     def __init__(self, indent=None):
         Node.__init__(self, indent, to_explore=True) 
-        self.description = []
+        self.descriptions = []
         self.docstring = []
         self.parameters = {}
         self.types = {}
@@ -76,7 +91,7 @@ class ClassNode(Node):
         self.variables_instance = {}
         self.types_class = {}
         self.types_instance = {}
-        self.description = []
+        self.descriptions = []
         self.docstring = []
 
     def find_parent_class(self):
@@ -103,7 +118,7 @@ class FunctionNode(Node):
         self.definition = definition
         self.parameters = {}
         self.types = {}
-        self.description = []
+        self.descriptions = []
         self.docstring = []
 
 

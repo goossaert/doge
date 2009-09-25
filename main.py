@@ -22,7 +22,7 @@ __docformat__ = "restructuredtext en"
 
 from file_parser import Parser
 from writer import Writer
-from python import PythonFactory
+from python import RestructuredTextFactory
 
 if __name__ == '__main__':
     parser = Parser()
@@ -44,5 +44,5 @@ if __name__ == '__main__':
           '    bombe\n',
           '        interesring\n']
 
-    factory = PythonFactory()
-    factory.parse_sequence_parameter(None, ds)
+    factory = RestructuredTextFactory()
+    #factory.parse_sequence_parameter(None, ds)
