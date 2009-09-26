@@ -46,8 +46,7 @@ pattern_section = re.compile(
     """, re.VERBOSE | re.DOTALL)
 
 
-class RestructuredTextReader:
-
+class RestructuredTextReader: 
     def __init__(self):
         pass
 
@@ -120,8 +119,9 @@ class RestructuredTextReader:
 
 
     def _add_description(self, name, node, text):
+        pass
         section = SBSectionDescription(node.padding, name)
-        description = SBDescription(node.padding, text)
+        description = SBText(node.padding, text)
         section.sd.append(description)
         node.sf.append(section)
 
@@ -199,7 +199,7 @@ class RestructuredTextReader:
                                                   line,
                                                   buffer)
 
-        description = SBDescription(node.padding, buffer)
+        description = SBText(node.padding, buffer)
         section = SBSectionDescription(node.padding, name, options)
         section.sb.append(description)
         print 'section text:', name, node
@@ -228,7 +228,7 @@ class RestructuredTextReader:
                 # a new parameter has been encountered
                 if parameter:
                     # if a parameter was being addressed, it has to be saved
-                    description = SBDescription(node.padding, buffer)
+                    description = SBText(node.padding, buffer)
                     parameter.sd.append(description)
                     buffer = ['']
                 infos = re.split('[^\w]+', line.strip()) 
@@ -266,138 +266,5 @@ class RestructuredTextReader:
 
         return buffer
 
-
-
-class RestructuredTextWriter:
-
-    def __init__(self):
-        pass
-
-
-    def make_docstring_file(self, node):
-        return ''
-
-
-    def make_docstring_class(self, node):
-        if not doc.find_section('CVariables', node.sf) and not doc.find_section('IVariables', node.sf):
-            return ''
-
-        doc_variable = '%s%s\n\
-                        %s%s\n'.replace(' ','')
-
-        doc_section = '\n\
-                        %(indent)s:%(section)s:\n\
-                        %(variables)s'.replace(' ','')
-
-        doc_function = '%(indent)s"""\n\
-                        %(indent)s%(description)s%(content)s\
-                        %(indent)s"""\n'.replace(' ', '')
-
-        # TODO factorize with make_docstring for functions
-        diff = node.indent_children - node.indent
-        indent_name = ' ' * (node.indent_children + diff)
-        indent_description = ' ' * (node.indent_children + diff * 2)
-        indent = ' ' * node.indent_children
-
-        #var_class = [doc_variable % (indent_name, name, indent_description, ''.join(description)) for name, description in node.variables_class.items()]
-        var_class = []
-        var_class_content = doc_section % {'indent': indent,
-                                           'section': 'CVariables',
-                                           'variables': ''.join(var_class)}
-
-        #var_instance = [doc_variable % (indent_name, name, indent_description, ''.join(description)) for name, description in node.variables_instance.items()]
-        var_instance = []
-        var_instance_content = doc_section % {'indent': indent,
-                                              'section': 'IVariables',
-                                              'variables': ''.join(var_instance)}
-
-        content = ''
-        if var_class:
-            content += var_class_content
-
-        if var_instance:
-            content += var_instance_content
-
-        return doc_function % {'indent': indent,
-                               #'description': ''.join(node.descriptions[0] + ['\n'] + node.descriptions[1]),
-                               'description': '',
-                               'content': content}
-
-
-    def _cut_line(self, line, len_editable):
-        words = re.split('\s', line)
-        id_cut = 0
-        if len(words[0]) >= len_editable:
-            # first word bigger than the line: can't cut it!
-            id_cut = 1
-        else :
-            # else, let's decompose the line
-            len_cut = 0
-            while len_cut < len_editable:
-                id_cut += 1
-                len_cut = len(' '.join(words[:id_cut]))
-            id_cut -= 1
-
-        return words[:id_cut], words[id_cut:] 
-
-
-    def _format_lines(self, lines, len_indent, len_max=80):
-        formatted = []
-        len_editable = len_max - len_indent
-        if len_editable <= 0:
-            return lines
-        
-        for line in lines:
-            indexes = [(pos * len_editable, (pos + 1) * len_editable) for pos in range((len(lines) // len_editable) + 1)]
-            for index in indexes:
-                start = index(0)
-                end = index(1)
-                formatted.append(' ' * len_indent + line[start, end])
-                
-
-    def _make_docstring_description(self, node):
-        doc_description = '%s%s\n'.replace(' ','')
-        description_short = [doc_description % (indent, line) for line in node.descriptions[0]]
-        description_long = [doc_description % (indent, line) for line in node.descriptions[1]]
-
-
-    def _make_docstring_parameters(self, node, parameters):
-        doc_parameter = '%s%s\n\
-                         %s%s\n'.replace(' ','')
-        return [doc_parameter % (indent_name, name, indent_description, ''.join(description)) for name, description in parameters.items()]
-
-
-    def make_docstring_function(self, node):
-        if not doc.find_section('Parameters', node.sf):
-            return ''
-
-        doc_function = '%(indent)s"""\n\
-                        %(description_short)s\
-                        %(description_long)s\
-                        %(indent)s:Parameters:\n\
-                        %(parameters)s\
-                        %(indent)s"""\n'.replace(' ','')
-
-        indent_diff = node.indent_children - node.indent
-        indent_name = ' ' * (node.indent_children + indent_diff)
-        indent_description = ' ' * (node.indent_children + indent_diff * 2)
-        indent = ' ' * node.indent_children
-
-        parameters = self._make_docstring_parameters(indent_name, {})#node.parameters)
-
-        return doc_function % {'indent': indent,
-                               #'description': ''.join(node.descriptions[0] + ['\n'] + node.descriptions[1]),
-                               'description_short': '',
-                               'description_long': '',
-                               'parameters': ''.join(parameters)}
-
-
-    def make_prototype_class(self, node):
-        base_classes = '(' + node.definition + ')' if node.definition else ''
-        return node.indent * ' ' + 'class ' + node.name + base_classes + ':'
-
-
-    def make_prototype_function(self, node):
-        return node.indent * ' ' + 'def ' + node.name + '(' + node.definition + ')' + ':'
 
 

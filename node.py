@@ -21,16 +21,16 @@ __docformat__ = "restructuredtext en"
 ## along with pydoge.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from rst import RestructuredTextReader
-from rst import RestructuredTextWriter
+from rst_reader import RestructuredTextReader
+from rst_writer import RestructuredTextWriter
 from merger import Merger
 
 class Padding:
     def __init__(self, node):
-        indent_diff = node.indent_children - node.indent
-        padding_name = ' ' * (node.indent_children + indent_diff)
-        padding_description = ' ' * (node.indent_children + indent_diff * 2)
-        padding = ' ' * node.indent_children
+        self.indent_diff = node.indent_children - node.indent
+        self.name = ' ' * (node.indent_children + self.indent_diff)
+        self.description = ' ' * (node.indent_children + self.indent_diff * 2)
+        self.children = ' ' * node.indent_children
 
 
 class Node:
@@ -56,6 +56,7 @@ class Node:
 
 
     def make_docstring(self):
+        return ''.join([item.make_docstring() for item in self.sf])
         pass
 
 
@@ -84,7 +85,7 @@ class FileNode(Node):
         return None
 
 
-    def make_docstring(self):
+    def obs_make_docstring(self):
         return self.writer.make_docstring_file(self)
 
 
@@ -113,7 +114,7 @@ class ClassNode(Node):
         return self
 
 
-    def make_docstring(self):
+    def obs_make_docstring(self):
         return self.writer.make_docstring_class(self)
 
 
@@ -145,7 +146,7 @@ class FunctionNode(Node):
         return self
 
 
-    def make_docstring(self):
+    def obs_make_docstring(self):
         return self.writer.make_docstring_function(self)
 
 

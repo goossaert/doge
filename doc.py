@@ -20,6 +20,8 @@ __docformat__ = "restructuredtext en"
 ## You should have received a copy of the GNU General Public License
 ## along with pydoge.  If not, see <http://www.gnu.org/licenses/>.
 
+from rst_writer import RestructuredTextWriter
+
 
 def find_section(name, sections):
     for section in sections:
@@ -36,10 +38,11 @@ class SB:
     def __init__(self, padding=None):
         self.padding = padding
         self.sd = []
+        self.writer = RestructuredTextWriter()
 
     def make_docstring(self):
-        return 'empty'
-
+        return ''.join(item.make_docstring() for item in self.sd)
+            
 
 class SBParameter(SB):
     def __init__(self, padding=None, name=None, type=None):
@@ -48,10 +51,13 @@ class SBParameter(SB):
         self.type = type
 
 
-class SBDescription(SB):
+class SBText(SB):
     def __init__(self, padding=None, text=[]):
         SB.__init__(self, padding)
         self.text = text
+
+    def make_docstring(self):
+        return self.writer.make_docstring_text_sb(self)
 
 
 class SBSection(SB):
@@ -66,10 +72,15 @@ class SBSectionParameter(SBSection):
         SBSection.__init__(self, padding, name, option)
         self.parameters = {}
 
+    def make_docstring(self):
+        return self.writer.make_docstring_parameters_sb(self)
+
+
 
 class SBSectionDescription(SBSection):
     def __init__(self, padding=None, name=None, option=None):
         SBSection.__init__(self, padding, name, option)
 
-
+    def make_docstring(self):
+        return self.writer.make_docstring_description_sb(self)
 

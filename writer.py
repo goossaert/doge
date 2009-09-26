@@ -21,12 +21,14 @@ __docformat__ = "restructuredtext en"
 ## along with pydoge.  If not, see <http://www.gnu.org/licenses/>.
 
 from node import *
+from rst_writer import RestructuredTextWriter
 
 class Writer:
 
     buffer = []
     
     def __init__(self):
+        self.rst = RestructuredTextWriter()
         pass
 
     # TODO check if this is possible to put all this in the node classes.
@@ -41,7 +43,9 @@ class Writer:
                 docstring = node.make_docstring()
                 #docstring = None
                 if docstring:
+                    self.buffer.append(self.rst.start(node.padding))
                     self.buffer.append(docstring)
+                    self.buffer.append(self.rst.end(node.padding))
                 self.write(node)
             else:
                 self.buffer.append(node.content)
