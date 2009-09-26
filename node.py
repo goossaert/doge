@@ -1,5 +1,5 @@
 """
-Python docstring generator.
+Node system.
 """
 __docformat__ = "restructuredtext en"
 
@@ -21,7 +21,9 @@ __docformat__ = "restructuredtext en"
 ## along with pydoge.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from python import RestructuredTextFactory
+from rst import RestructuredTextReader
+from rst import RestructuredTextWriter
+from merger import Merger
 
 class Padding:
     def __init__(self, node):
@@ -40,7 +42,9 @@ class Node:
         self.sc = []
         self.parent = None
         self.to_explore = to_explore
-        self.generator = RestructuredTextFactory()
+        self.reader = RestructuredTextReader()
+        self.writer = RestructuredTextWriter()
+        self.merger = Merger()
         self.padding = None
 
     def find_parent_class(self):
@@ -59,6 +63,10 @@ class Node:
         pass
 
 
+    def merge_docstring(self):
+        pass
+
+
     def compute_padding(self):
         self.padding = Padding(self)
 
@@ -67,19 +75,26 @@ class Node:
 class FileNode(Node):
     def __init__(self, indent=None):
         Node.__init__(self, indent, to_explore=True) 
-        self.descriptions = []
+        #self.descriptions = []
         self.docstring = []
-        self.parameters = {}
-        self.types = {}
+        #self.parameters = {}
+        #self.types = {}
 
     def find_parent_function(self):
         return None
 
+
     def make_docstring(self):
-        return self.generator.make_docstring_file(self)
+        return self.writer.make_docstring_file(self)
+
 
     def parse_docstring(self):
-        return self.generator.parse_docstring_file(self)
+        return self.reader.parse_docstring_file(self)
+
+
+    def merge_docstring(self):
+        self.merger.merge_file(self.sf, self.sc)
+
 
 
 class ClassNode(Node):
@@ -87,11 +102,11 @@ class ClassNode(Node):
         Node.__init__(self, indent, to_explore=True) 
         self.name = name
         self.definition = definition
-        self.variables_class = {}
-        self.variables_instance = {}
-        self.types_class = {}
-        self.types_instance = {}
-        self.descriptions = []
+        #self.variables_class = {}
+        #self.variables_instance = {}
+        #self.types_class = {}
+        #self.types_instance = {}
+        #self.descriptions = []
         self.docstring = []
 
     def find_parent_class(self):
@@ -99,15 +114,19 @@ class ClassNode(Node):
 
 
     def make_docstring(self):
-        return self.generator.make_docstring_class(self)
+        return self.writer.make_docstring_class(self)
 
 
     def make_prototype(self):
-        return self.generator.make_prototype_class(self)
+        return self.writer.make_prototype_class(self)
          
 
     def parse_docstring(self):
-        return self.generator.parse_docstring_class(self)
+        return self.reader.parse_docstring_class(self)
+
+
+    def merge_docstring(self):
+        self.merger.merge_class(self.sf, self.sc)
 
 
 
@@ -116,9 +135,9 @@ class FunctionNode(Node):
         Node.__init__(self, indent, to_explore=True) 
         self.name = name
         self.definition = definition
-        self.parameters = {}
-        self.types = {}
-        self.descriptions = []
+        #self.parameters = {}
+        #self.types = {}
+        #self.descriptions = []
         self.docstring = []
 
 
@@ -127,16 +146,20 @@ class FunctionNode(Node):
 
 
     def make_docstring(self):
-        return self.generator.make_docstring_function(self)
+        return self.writer.make_docstring_function(self)
 
 
     def make_prototype(self):
-        return self.generator.make_prototype_function(self)
+        return self.writer.make_prototype_function(self)
 
 
     def parse_docstring(self):
-        return self.generator.parse_docstring_function(self)
+        return self.reader.parse_docstring_function(self)
          
+
+    def merge_docstring(self):
+        self.merger.merge_function(self.sf, self.sc)
+
 
          
 class CodeNode(Node):

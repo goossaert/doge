@@ -23,9 +23,9 @@ __docformat__ = "restructuredtext en"
 import io
 import re
 
-import python
+import doc
 
-from python import *
+from doc import *
 from node import *
 
 class Parser:
@@ -187,7 +187,7 @@ class Parser:
                     if match_self:
                         # Instance variables
                         node_class = node.find_parent_class()
-                        section = python.find_section('IVariables', node_parent.sc)
+                        section = doc.find_section('IVariables', node_parent.sc)
                         if not section:
                             section = SBSectionParameter(node_parent.padding, 'IVariables')
                             node_class.sc.append(section)
@@ -198,7 +198,7 @@ class Parser:
                         # Class variables
                         match_assignment = self.pattern_assignment.match(node.content)
                         if match_assignment and isinstance(node_parent, ClassNode):
-                            section = python.find_section('CVariables', node_parent.sc)
+                            section = doc.find_section('CVariables', node_parent.sc)
                             if not section:
                                 section = SBSectionParameter(node_parent.padding, 'CVariables')
                                 node_parent.sc.append(section)

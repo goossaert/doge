@@ -20,27 +20,34 @@ __docformat__ = "restructuredtext en"
 ## You should have received a copy of the GNU General Public License
 ## along with pydoge.  If not, see <http://www.gnu.org/licenses/>.
 
+import doc
+
 from node import *
 
-class Writer:
 
-    buffer = []
-    
+class Merger:
+
     def __init__(self):
         pass
 
-    # TODO check if this is possible to put all this in the node classes.
-    def write(self, node_file):
-        for node in node_file.content:
-            if node.to_explore: 
-                # TODO careful here, the order of docstring and definition is
-                # up to every language and/or documentation system
-                self.buffer.append(node.make_prototype() + '\n')
-                node.parse_docstring()
-                node.merge_docstring()
-                docstring = node.make_docstring()
-                if docstring:
-                    self.buffer.append(docstring)
-                self.write(node)
-            else:
-                self.buffer.append(node.content)
+
+    def merge(self, name, sections_src, sections_dest):
+        section_src = doc.find_section(name, sections_src)
+        section_dest = doc.find_section(name, sections_dest)
+        if section_src and section_dest: 
+            section_dest.parameters.update(section_src.parameters) 
+            section_dest.parameters = section_src.parameters
+
+
+    def merge_function(self, sections_src, sections_dest):
+        self.merge('Parameters', sections_src, sections_dest)
+
+
+    def merge_file(self, sections_src, sections_dest):
+        self.merge('Parameters', sections_src, sections_dest)
+
+
+    def merge_class(self, sections_src, sections_dest):
+        self.merge('CVariables', sections_src, sections_dest)
+        self.merge('IVariables', sections_src, sections_dest)
+

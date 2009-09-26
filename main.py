@@ -20,9 +20,11 @@ __docformat__ = "restructuredtext en"
 ## You should have received a copy of the GNU General Public License
 ## along with pydoge.  If not, see <http://www.gnu.org/licenses/>.
 
-from file_parser import Parser
+from file_parser_python import Parser
 from writer import Writer
-from python import RestructuredTextFactory
+from rst import RestructuredTextReader
+from rst import RestructuredTextWriter
+
 
 if __name__ == '__main__':
     parser = Parser()
@@ -44,5 +46,3 @@ if __name__ == '__main__':
           '    bombe\n',
           '        interesring\n']
 
-    factory = RestructuredTextFactory()
-    #factory.parse_sequence_parameter(None, ds)
