@@ -39,6 +39,7 @@ class Writer:
                 node.parse_docstring()
                 node.merge_docstring()
                 docstring = node.make_docstring()
+                #docstring = None
                 if docstring:
                     self.buffer.append(docstring)
                 self.write(node)

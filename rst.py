@@ -202,6 +202,7 @@ class RestructuredTextReader:
         description = SBDescription(node.padding, buffer)
         section = SBSectionDescription(node.padding, name, options)
         section.sb.append(description)
+        print 'section text:', name, node
         node.sf.append(section)
 
 
@@ -212,6 +213,7 @@ class RestructuredTextReader:
         docstring = self._strip_first_empty_lines(docstring)
 
         section = SBSectionParameter(node.padding, name)
+        node.sf.append(section)
 
         #indent_diff = node.indent_children - node.indent
         indent_diff = 4
@@ -232,8 +234,7 @@ class RestructuredTextReader:
                 infos = re.split('[^\w]+', line.strip()) 
                 name = infos[0]
                 type = infos[1] if len(infos) > 1 else ''
-                parameter = SBParameter(node.padding, name, type)
-                section.sd.append(parameter)
+                section.parameters[name] = SBParameter(node.padding, name, type)
             elif parameter:
                 # in a parameter description: if 'parameter' is not set,
                 # just skip the line!
@@ -247,7 +248,7 @@ class RestructuredTextReader:
                     # the line is empty
                     buffer.append('\n')
                     buffer.append('')
-                 
+
 
     # TODO rename
     def _handle_description(self, indent_current, indent_objective, line, buffer):
@@ -298,12 +299,14 @@ class RestructuredTextWriter:
         indent_description = ' ' * (node.indent_children + diff * 2)
         indent = ' ' * node.indent_children
 
-        var_class = [doc_variable % (indent_name, name, indent_description, ''.join(description)) for name, description in node.variables_class.items()]
+        #var_class = [doc_variable % (indent_name, name, indent_description, ''.join(description)) for name, description in node.variables_class.items()]
+        var_class = []
         var_class_content = doc_section % {'indent': indent,
                                            'section': 'CVariables',
                                            'variables': ''.join(var_class)}
 
-        var_instance = [doc_variable % (indent_name, name, indent_description, ''.join(description)) for name, description in node.variables_instance.items()]
+        #var_instance = [doc_variable % (indent_name, name, indent_description, ''.join(description)) for name, description in node.variables_instance.items()]
+        var_instance = []
         var_instance_content = doc_section % {'indent': indent,
                                               'section': 'IVariables',
                                               'variables': ''.join(var_instance)}
@@ -316,7 +319,8 @@ class RestructuredTextWriter:
             content += var_instance_content
 
         return doc_function % {'indent': indent,
-                               'description': ''.join(node.descriptions[0] + ['\n'] + node.descriptions[1]),
+                               #'description': ''.join(node.descriptions[0] + ['\n'] + node.descriptions[1]),
+                               'description': '',
                                'content': content}
 
 
@@ -379,10 +383,12 @@ class RestructuredTextWriter:
         indent_description = ' ' * (node.indent_children + indent_diff * 2)
         indent = ' ' * node.indent_children
 
-        parameters = self._make_docstring_parameters(indent_name, node, node.parameters)
+        parameters = self._make_docstring_parameters(indent_name, {})#node.parameters)
 
         return doc_function % {'indent': indent,
-                               'description': ''.join(node.descriptions[0] + ['\n'] + node.descriptions[1]),
+                               #'description': ''.join(node.descriptions[0] + ['\n'] + node.descriptions[1]),
+                               'description_short': '',
+                               'description_long': '',
                                'parameters': ''.join(parameters)}
 
 

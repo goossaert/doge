@@ -183,34 +183,38 @@ class Parser:
                 if node.to_explore:
                     stack.append(node)
                 else: 
+                    # Instance variables
                     match_self = self.pattern_self.match(node.content)
                     if match_self:
-                        # Instance variables
                         node_class = node.find_parent_class()
-                        section = doc.find_section('IVariables', node_parent.sc)
-                        if not section:
+                        section = doc.find_section('IVariables', node_class.sc)
+                        if section == None:
                             section = SBSectionParameter(node_parent.padding, 'IVariables')
                             node_class.sc.append(section)
-                        name = match_self.group('name')[0]
-                        section.parameters[name] = SBParameter(name)
+                        name = match_self.group('name')
+                        print 'add:', name
+                        section.parameters[name] = SBParameter(node.padding, name)
                         #node_class.variables_instance[match_self.group('name')] = ''
-                    else:
-                        # Class variables
-                        match_assignment = self.pattern_assignment.match(node.content)
-                        if match_assignment and isinstance(node_parent, ClassNode):
-                            section = doc.find_section('CVariables', node_parent.sc)
-                            if not section:
-                                section = SBSectionParameter(node_parent.padding, 'CVariables')
-                                node_parent.sc.append(section)
-                            name = match_assignment.group('name')[0]
-                            section.parameters[name] = SBParameter(name)
-                            #node_parent.variables_class[match_assignment.group('name')] = ''
+
+                    # Class variables
+                    match_assignment = self.pattern_assignment.match(node.content)
+                    if match_assignment and isinstance(node_parent, ClassNode):
+                        section = doc.find_section('CVariables', node_parent.sc)
+                        if section == None:
+                            section = SBSectionParameter(node_parent.padding, 'CVariables')
+                            node_parent.sc.append(section)
+                        name = match_assignment.group('name')
+                        print 'add:', name
+                        section.parameters[name] = SBParameter(node.padding, name)
+                        #node_parent.variables_class[match_assignment.group('name')] = ''
                     
             if isinstance(node_parent, FunctionNode):
                 section = SBSectionParameter(node_parent.padding, 'Parameters')
                 parameters = re.split('[^\w=]+', node_parent.definition)
+                print 'param ', parameters
                 for parameter in parameters:
                     if parameter and parameter != 'self':
-                        name = re.split('[=]+', parameter, 1)
-                        section.parameters[name[0]] = SBParameter(name[0])
+                        name = re.split('[=]+', parameter)[0]
+                        section.parameters[name] = SBParameter(node.padding, name)
+                        print section.parameters[name]
                 node_parent.sc.append(section)

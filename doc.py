@@ -23,8 +23,11 @@ __docformat__ = "restructuredtext en"
 
 def find_section(name, sections):
     for section in sections:
-        if isinstance(section, SBSection) and section.name == name:
-            return section
+        #if (isinstance(section, SBSectionDescription) or isinstance(section, SBSectionParameter) ) and section.name == name:
+        if isinstance(section, SBSection):
+            print 'search:', section, '"' + section.name + '"', '"' + name + '"'
+            if section.name == name:
+                return section
     return None
 
 
