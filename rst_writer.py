@@ -68,11 +68,58 @@ class RestructuredTextWriter:
         return ''
 
 
+    def make_docstring_list(self, list):
+        docstring = []
+        list = list[:] # local copy
+        while list:
+            name= list[0]
+            id_current = len(self.sd)
+            # TODO replace the list in SB by a dictionary: for SB with no name,
+            # take the len of the dict at the moment of the add
+
+            for id_current, section in enumerate(self.sd):
+                if isinstance(section, SBSection) and section.name == name:
+                    break
+                    
+            if id_current != len(self.sd):
+                docstring.append(section.make_docstring())
+            elif list:
+                del list[0] 
+
+        return ''.join(docstring)
+
+
+    def make_docstring_not_list(self, list):
+        docstring = []
+        for section in self.sd:
+            for name in list:
+                if not isinstance(section, SBSection) or section.name == name:
+                    docstring.append(section.make_docstring())
+                   
+        return ''.join(docstring)
+
+
     def make_docstring_class(self, node):
                     #self.buffer.append(self.rst.start(node.padding))
                     #self.buffer.append(self.rst.end(node.padding))
-        if not doc.find_section('CVariables', node.sf) and not doc.find_section('IVariables', node.sf):
-            return ''
+        #if not doc.find_section('CVariables', node.sf) and not doc.find_section('IVariables', node.sf):
+        #    return ''
+
+        list = ['Short', 'Long', 'IVariables', 'CVariables']
+
+        priority = make_docstring_list(list)
+        non_priority = make_docstring_not_list(list)
+
+        return priority + non_priority
+
+
+
+
+
+
+
+
+        pass
 
         doc_variable = '%s%s\n\
                         %s%s\n'.replace(' ','')

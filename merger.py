@@ -31,24 +31,25 @@ class Merger:
         pass
 
 
-    def merge(self, name, sb_src, sb_dest):
-        section_src = sb_src.find_section(name)
-        section_dest = sb_dest.find_section(name)
-        if section_src and section_dest: 
-            section_dest.parameters.update(section_src.parameters) 
+    def _merge_parameters(self, name, sb_src, sb_dest):
+        #section_src = sb_src.find_section(name)
+        #section_dest = sb_dest.find_section(name)
+        #if section_src and section_dest: 
+        #    section_dest.parameters.update(section_src.parameters) 
             #section_dest.parameters = section_src.parameters
+        pass
 
 
     def merge_function(self, sb_src, sb_dest):
-        self.merge('Parameters', sb_src, sb_dest)
+        self._merge_parameters('Parameters', sb_src, sb_dest)
 
 
     def merge_file(self, sb_src, sb_dest):
-        self.merge('Parameters', sb_src, sb_dest)
+        self._merge_parameters('Parameters', sb_src, sb_dest)
 
 
     def merge_class(self, sb_src, sb_dest):
-        self.merge('CVariables', sb_src, sb_dest)
+        self._merge_parameters('CVariables', sb_src, sb_dest)
         pass
-        self.merge('IVariables', sb_src, sb_dest)
+        self._merge_parameters('IVariables', sb_src, sb_dest)
 

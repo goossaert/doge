@@ -91,6 +91,7 @@ class FileNode(Node):
         #self.parameters = {}
         #self.types = {}
 
+
     def find_parent_function(self):
         return None
 
@@ -104,7 +105,8 @@ class FileNode(Node):
 
 
     def merge_docstring(self):
-        self.merger.merge_file(self.sf, self.sc)
+        #self.merger.merge_file(self.sf, self.sc)
+        self.sc.swallow(self.sf)
 
 
 
@@ -126,6 +128,10 @@ class ClassNode(Node):
         return self
 
 
+    def make_docstring(self):
+        return self.sc.make_docstring()
+        
+
     def obs_make_docstring(self):
         return self.writer.make_docstring_class(self)
 
@@ -139,7 +145,8 @@ class ClassNode(Node):
 
 
     def merge_docstring(self):
-        self.merger.merge_class(self.sf, self.sc)
+        #self.merger.merge_class(self.sf, self.sc)
+        self.sc.swallow(self.sf)
 
 
 
@@ -173,10 +180,11 @@ class FunctionNode(Node):
          
 
     def merge_docstring(self):
-        self.merger.merge_function(self.sf, self.sc)
+        #self.merger.merge_function(self.sf, self.sc)
+        self.sc.swallow(self.sf)
 
 
-         
+
 class CodeNode(Node):
     def __init__(self, indent=None):
         Node.__init__(self, indent) 

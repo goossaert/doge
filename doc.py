@@ -33,6 +33,7 @@ class SB:
     #def make_docstring(self):
     #    return ''.join(item.make_docstring() for item in self.sd)
 
+
     def find_section(self, name):
         for section in self.sd:
             #if (isinstance(section, SBSectionDescription) or isinstance(section, SBSectionParameter) ) and section.name == name:
@@ -40,6 +41,17 @@ class SB:
                 if section.name == name:
                     return section
         return None
+
+
+    def swallow(self, sb):
+        for section_out in sb.sd:
+            if isinstance(section_out, SBSection):
+                section_in = self.find_section(section_out.name)
+                if section_in:
+                    section_in.swallow(section_out)
+                else:
+                    print 'add:', section_out.name
+                    self.sd.append(section_out)
 
 
             
@@ -50,6 +62,11 @@ class SBParameter(SB):
         self.name = name
         self.type = type
 
+    def swallow(self, sb):
+        self.name = sb.name
+        self.type = sb.type
+
+
 
 class SBText(SB):
     def __init__(self, padding=None, text=[]):
@@ -59,12 +76,17 @@ class SBText(SB):
     def make_docstring(self):
         return self.writer.make_docstring_text_sb(self)
 
+    def swallow(self, sb):
+        self.text = sb.text
+
+
 
 class SBSection(SB):
     def __init__(self, padding=None, name=None, option=None):
         SB.__init__(self, padding)
         self.name = name
         self.option = option
+
 
 
 class SBSectionParameter(SBSection):
@@ -75,6 +97,9 @@ class SBSectionParameter(SBSection):
     def make_docstring(self):
         return self.writer.make_docstring_parameters_sb(self)
 
+    def swallow(self, sb):
+        self.parameters.update(sb.parameters) 
+
 
 
 class SBSectionDescription(SBSection):
@@ -82,8 +107,12 @@ class SBSectionDescription(SBSection):
         SBSection.__init__(self, padding, name, option)
 
     def make_docstring(self):
-        print '+++++section description:', self.name
         return self.writer.make_docstring_description_sb(self)
+
+    def swallow(self, sb):
+        # TODO am i sure about that?
+        self.sd = sb.sd
+         
 
 
 class SBBase(SB):
@@ -95,14 +124,17 @@ class SBBase(SB):
         return self.writer.start(self.padding) + content + self.writer.end(self.padding)
 
 
+
 class SBFile(SBBase):
     def __init__(self, padding=None):
         SBBase.__init__(self, padding)
 
 
+
 class SBClass(SBBase):
     def __init__(self, padding=None):
         SBBase.__init__(self, padding)
+
 
 
 class SBFunction(SBBase):
