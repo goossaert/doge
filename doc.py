@@ -23,16 +23,6 @@ __docformat__ = "restructuredtext en"
 from rst_writer import RestructuredTextWriter
 
 
-def find_section(name, sections):
-    for section in sections:
-        #if (isinstance(section, SBSectionDescription) or isinstance(section, SBSectionParameter) ) and section.name == name:
-        if isinstance(section, SBSection):
-            print 'search:', section, '"' + section.name + '"', '"' + name + '"'
-            if section.name == name:
-                return section
-    return None
-
-
 # TODO delete the SB class hierarchy
 class SB:
     def __init__(self, padding=None):
@@ -40,8 +30,18 @@ class SB:
         self.sd = []
         self.writer = RestructuredTextWriter()
 
-    def make_docstring(self):
-        return ''.join(item.make_docstring() for item in self.sd)
+    #def make_docstring(self):
+    #    return ''.join(item.make_docstring() for item in self.sd)
+
+    def find_section(self, name):
+        for section in self.sd:
+            #if (isinstance(section, SBSectionDescription) or isinstance(section, SBSectionParameter) ) and section.name == name:
+            if isinstance(section, SBSection):
+                if section.name == name:
+                    return section
+        return None
+
+
             
 
 class SBParameter(SB):
@@ -82,5 +82,30 @@ class SBSectionDescription(SBSection):
         SBSection.__init__(self, padding, name, option)
 
     def make_docstring(self):
+        print '+++++section description:', self.name
         return self.writer.make_docstring_description_sb(self)
+
+
+class SBBase(SB):
+    def __init__(self, padding=None):
+        SB.__init__(self, padding)
+
+    def make_docstring(self):
+        content = ''.join([item.make_docstring() for item in self.sd])
+        return self.writer.start(self.padding) + content + self.writer.end(self.padding)
+
+
+class SBFile(SBBase):
+    def __init__(self, padding=None):
+        SBBase.__init__(self, padding)
+
+
+class SBClass(SBBase):
+    def __init__(self, padding=None):
+        SBBase.__init__(self, padding)
+
+
+class SBFunction(SBBase):
+    def __init__(self, padding=None):
+        SBBase.__init__(self, padding)
 

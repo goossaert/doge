@@ -43,9 +43,7 @@ class Writer:
                 docstring = node.make_docstring()
                 #docstring = None
                 if docstring:
-                    self.buffer.append(self.rst.start(node.padding))
                     self.buffer.append(docstring)
-                    self.buffer.append(self.rst.end(node.padding))
                 self.write(node)
             else:
                 self.buffer.append(node.content)

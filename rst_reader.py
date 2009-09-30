@@ -52,13 +52,10 @@ class RestructuredTextReader:
 
 
     def _cleanup_parameters(self, parameters):
-        print '*** cleanup', parameters
         strip_newline = lambda string: '' if string == '\n' else string + '\n'
 
         for name, descriptions in parameters.items():
-            print 'before', parameters[name]
             parameters[name] = [strip_newline(d) for d in descriptions if d]
-            print 'after', parameters[name]
 
 
     def _fill_descriptions(self, node, descriptions):
@@ -76,7 +73,6 @@ class RestructuredTextReader:
 
 
     def parse_docstring_file(self, node):
-        print '---------- parse file'
         self.parse_docstring(node)
         return
         titles = [('Parameters', node.parameters, node.types)]
@@ -85,7 +81,6 @@ class RestructuredTextReader:
 
 
     def parse_docstring_class(self, node):
-        print '---------- parse class'
         self.parse_docstring(node)
         return
         titles = [('CVariables', node.variables_class, node.types_class),
@@ -95,7 +90,6 @@ class RestructuredTextReader:
 
 
     def parse_docstring_function(self, node):
-        print '---------- parse function'
         self.parse_docstring(node)
         return
         titles = [('Parameters', node.parameters, node.types)]
@@ -123,7 +117,7 @@ class RestructuredTextReader:
         section = SBSectionDescription(node.padding, name)
         description = SBText(node.padding, text)
         section.sd.append(description)
-        node.sf.append(section)
+        node.sf.sd.append(section)
 
 
     def _parse_docstring_descriptions(self, node, docstring):
@@ -201,9 +195,8 @@ class RestructuredTextReader:
 
         description = SBText(node.padding, buffer)
         section = SBSectionDescription(node.padding, name, options)
-        section.sb.append(description)
-        print 'section text:', name, node
-        node.sf.append(section)
+        section.sd.append(description)
+        node.sf.sd.append(section)
 
 
     def parse_section_parameter(self, name, options, node, docstring):
@@ -213,7 +206,7 @@ class RestructuredTextReader:
         docstring = self._strip_first_empty_lines(docstring)
 
         section = SBSectionParameter(node.padding, name)
-        node.sf.append(section)
+        node.sf.sd.append(section)
 
         #indent_diff = node.indent_children - node.indent
         indent_diff = 4
@@ -235,6 +228,7 @@ class RestructuredTextReader:
                 name = infos[0]
                 type = infos[1] if len(infos) > 1 else ''
                 section.parameters[name] = SBParameter(node.padding, name, type)
+                parameter = section.parameters[name]
             elif parameter:
                 # in a parameter description: if 'parameter' is not set,
                 # just skip the line!
@@ -248,6 +242,12 @@ class RestructuredTextReader:
                     # the line is empty
                     buffer.append('\n')
                     buffer.append('')
+
+        # in case the parameter is at the end of the list, but maybe recode this in a cleaner way
+        if parameter:
+            # if a parameter was being addressed, it has to be saved
+            description = SBText(node.padding, buffer)
+            parameter.sd.append(description)
 
 
     # TODO rename

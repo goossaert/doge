@@ -187,34 +187,30 @@ class Parser:
                     match_self = self.pattern_self.match(node.content)
                     if match_self:
                         node_class = node.find_parent_class()
-                        section = doc.find_section('IVariables', node_class.sc)
+                        section = node_class.sc.find_section('IVariables')
                         if section == None:
                             section = SBSectionParameter(node_parent.padding, 'IVariables')
-                            node_class.sc.append(section)
+                            node_class.sc.sd.append(section)
                         name = match_self.group('name')
-                        print 'add:', name
                         section.parameters[name] = SBParameter(node.padding, name)
                         #node_class.variables_instance[match_self.group('name')] = ''
 
                     # Class variables
                     match_assignment = self.pattern_assignment.match(node.content)
                     if match_assignment and isinstance(node_parent, ClassNode):
-                        section = doc.find_section('CVariables', node_parent.sc)
+                        section = node_parent.sc.find_section('CVariables')
                         if section == None:
                             section = SBSectionParameter(node_parent.padding, 'CVariables')
-                            node_parent.sc.append(section)
+                            node_parent.sc.sd.append(section)
                         name = match_assignment.group('name')
-                        print 'add:', name
                         section.parameters[name] = SBParameter(node.padding, name)
                         #node_parent.variables_class[match_assignment.group('name')] = ''
                     
             if isinstance(node_parent, FunctionNode):
                 section = SBSectionParameter(node_parent.padding, 'Parameters')
                 parameters = re.split('[^\w=]+', node_parent.definition)
-                print 'param ', parameters
                 for parameter in parameters:
                     if parameter and parameter != 'self':
                         name = re.split('[=]+', parameter)[0]
                         section.parameters[name] = SBParameter(node.padding, name)
-                        print section.parameters[name]
-                node_parent.sc.append(section)
+                node_parent.sc.sd.append(section)

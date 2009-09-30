@@ -69,6 +69,8 @@ class RestructuredTextWriter:
 
 
     def make_docstring_class(self, node):
+                    #self.buffer.append(self.rst.start(node.padding))
+                    #self.buffer.append(self.rst.end(node.padding))
         if not doc.find_section('CVariables', node.sf) and not doc.find_section('IVariables', node.sf):
             return ''
 
@@ -158,7 +160,7 @@ class RestructuredTextWriter:
 
 
     def make_docstring_function(self, node):
-        if not doc.find_section('Parameters', node.sf):
+        if not node.sf.find_section('Parameters'):
             return ''
 
         doc_function = '%(indent)s"""\n\
@@ -192,12 +194,12 @@ class RestructuredTextWriter:
 
 
     def make_docstring_text_sb(self, section):
-        doc_description = '%s%s\n'.replace(' ','')
-        text = section.text if section.sd else ''
-        return doc_description % ('    ', ''.join(text))
+        doc_description = '%s%s\n'
+        return doc_description % ('    ', ''.join(section.text))
 
 
     def make_docstring_description_sb(self, section):
+        print 'ds description:', section.name
         return ''.join(self.make_docstring_text_sb(s) for s in section.sd)
 
     
@@ -208,12 +210,12 @@ class RestructuredTextWriter:
         for parameter in section.parameters.values():
             name = parameter.name
             type = parameter.type
-            text = ''.join(self.make_docstring_text_sb(s) for s in parameter.sd)
+
+            text = ''.join([self.make_docstring_text_sb(s) for s in parameter.sd])
             doc_title = '%(name)s : %(type)s' if type else '%(name)s'
             title = doc_title % {'name': name, 'type': type}
             docstring = doc_parameter % ('', title, '', text) 
             buffer.append(docstring)
-        print 'param:', buffer
         return ''.join(buffer)
 
         #return [doc_parameter % (indent_name, name, indent_description, ''.join(description)) for name, description in section.parameters.items()]

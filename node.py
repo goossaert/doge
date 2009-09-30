@@ -24,6 +24,7 @@ __docformat__ = "restructuredtext en"
 from rst_reader import RestructuredTextReader
 from rst_writer import RestructuredTextWriter
 from merger import Merger
+from doc import *
 
 class Padding:
     def __init__(self, node):
@@ -33,19 +34,21 @@ class Padding:
         self.children = ' ' * node.indent_children
 
 
+
 class Node:
     def __init__(self, indent=None, to_explore=False):
         self.indent = indent
         self.indent_children = None
         self.content = []
-        self.sf = []
-        self.sc = []
         self.parent = None
         self.to_explore = to_explore
         self.reader = RestructuredTextReader()
         self.writer = RestructuredTextWriter()
         self.merger = Merger()
         self.padding = None
+        self.sf = None
+        self.sc = None
+
 
     def find_parent_class(self):
         return self.parent.find_parent_class()
@@ -56,7 +59,8 @@ class Node:
 
 
     def make_docstring(self):
-        return ''.join([item.make_docstring() for item in self.sf])
+        #return ''.join([item.make_docstring() for item in self.sf.sd])
+        return self.sc.make_docstring()
         pass
 
 
@@ -70,6 +74,10 @@ class Node:
 
     def compute_padding(self):
         self.padding = Padding(self)
+        if self.sf:
+            self.sf.padding = self.padding
+        if self.sc:
+            self.sc.padding = self.padding
 
 
 
@@ -78,6 +86,8 @@ class FileNode(Node):
         Node.__init__(self, indent, to_explore=True) 
         #self.descriptions = []
         self.docstring = []
+        self.sf = SBFile()
+        self.sc = SBFile()
         #self.parameters = {}
         #self.types = {}
 
@@ -103,6 +113,8 @@ class ClassNode(Node):
         Node.__init__(self, indent, to_explore=True) 
         self.name = name
         self.definition = definition
+        self.sf = SBClass()
+        self.sc = SBClass()
         #self.variables_class = {}
         #self.variables_instance = {}
         #self.types_class = {}
@@ -140,6 +152,8 @@ class FunctionNode(Node):
         #self.types = {}
         #self.descriptions = []
         self.docstring = []
+        self.sf = SBFunction()
+        self.sc = SBFunction()
 
 
     def find_parent_function(self):

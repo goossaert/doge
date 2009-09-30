@@ -22,8 +22,8 @@ __docformat__ = "restructuredtext en"
 
 from file_parser_python import Parser
 from writer import Writer
-from rst import RestructuredTextReader
-from rst import RestructuredTextWriter
+from rst_reader import RestructuredTextReader
+from rst_writer import RestructuredTextWriter
 
 
 if __name__ == '__main__':
