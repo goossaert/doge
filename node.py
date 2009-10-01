@@ -25,13 +25,7 @@ from rst_reader import RestructuredTextReader
 from rst_writer import RestructuredTextWriter
 from merger import Merger
 from doc import *
-
-class Padding:
-    def __init__(self, node):
-        self.indent_diff = node.indent_children - node.indent
-        self.name = ' ' * (node.indent_children + self.indent_diff)
-        self.description = ' ' * (node.indent_children + self.indent_diff * 2)
-        self.children = ' ' * node.indent_children
+from padding import Padding
 
 
 
@@ -73,7 +67,9 @@ class Node:
 
 
     def compute_padding(self):
-        self.padding = Padding(self)
+        indent_diff = self.indent_children - self.indent
+        indent_base = self.indent_children
+        self.padding = Padding(indent_base, indent_diff)
         if self.sf:
             self.sf.padding = self.padding
         if self.sc:

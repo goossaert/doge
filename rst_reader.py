@@ -25,6 +25,7 @@ __docformat__ = "restructuredtext en"
 import re
 import doc
 
+from padding import Padding
 from doc import *
 
 
@@ -115,17 +116,23 @@ class RestructuredTextReader:
     def _add_description(self, name, node, text):
         pass
         section = SBSectionDescription(node.padding, name)
+        print '_add_description:', name, node.padding.base, node.padding.diff
         description = SBText(node.padding, text)
         section.sd.append(description)
         node.sf.sd.append(section)
+
+        #indent_diff = node.indent_children - node.indent
+        #indent_base = len(pattern_indent.match(docstring[0]).group('indent'))
+        #padding = Padding(indent_base, indent_diff)
 
 
     def _parse_docstring_descriptions(self, node, docstring):
         # find the cut between short and long descriptions
         docstring = self._strip_lines(docstring)
-        id_cut = self._find_cut(docstring, lambda s: not s.strip())
-        self._add_description('Short', node, docstring[:id_cut])
-        self._add_description('Long', node, docstring[id_cut+1:])
+        if docstring and not docstring[0].startswith('"""'):
+            id_cut = self._find_cut(docstring, lambda s: not s.strip())
+            self._add_description('Short', node, docstring[:id_cut])
+            self._add_description('Long', node, docstring[id_cut+1:])
 
 
     # TODO modify the function so that it first split the docstring
@@ -143,7 +150,7 @@ class RestructuredTextReader:
         for id_line, line in enumerate(docstring):
 
             # look for sections or end of docstring
-            if line.strip().startswith(':') or line.strip() == '"""':
+            if line.strip().startswith(':') or line.strip().startswith('"""'):
                 # section, or end of docstring detected
                 if section_current:
                     # already in a section, hence we have to treat it before
@@ -181,9 +188,10 @@ class RestructuredTextReader:
     def parse_section_text(self, name, options, node, docstring):
         docstring = self._strip_docstring(docstring)
 
-        #indent_diff = node.indent_children - node.indent
-        indent_diff = 4
-        indent_description = len(pattern_indent.match(docstring[0]).group('indent'))
+        indent_diff = node.indent_children - node.indent
+        indent_base = len(pattern_indent.match(docstring[0]).group('indent'))
+        padding = Padding(indent_base, indent_diff)
+        print 'parse_section_text:', name, node.padding.base, node.padding.diff
         buffer = ['']
         for line in docstring:
             indent_current = len(pattern_indent.match(line).group('indent'))
@@ -193,8 +201,9 @@ class RestructuredTextReader:
                                                   line,
                                                   buffer)
 
-        description = SBText(node.padding, buffer)
+        description = SBText(padding, buffer)
         section = SBSectionDescription(node.padding, name, options)
+        print 'parse_section_text:', name, padding.base, padding.diff
         section.sd.append(description)
         node.sf.sd.append(section)
 
@@ -205,13 +214,20 @@ class RestructuredTextReader:
 
         docstring = self._strip_first_empty_lines(docstring)
 
-        section = SBSectionParameter(node.padding, name)
-        node.sf.sd.append(section)
 
         #indent_diff = node.indent_children - node.indent
-        indent_diff = 4
-        indent_parameter = len(pattern_indent.match(docstring[0]).group('indent'))
-        indent_description = indent_parameter + indent_diff 
+        #indent_diff = 4
+        #indent_description = indent_parameter + indent_diff 
+        indent_diff = node.indent_children - node.indent
+        indent_base = node.indent_children
+        #indent_base = len(pattern_indent.match(docstring[0]).group('indent'))
+        indent_parameter = len(pattern_indent.match(docstring[0]).group('indent')) + indent_diff
+        indent_description = indent_parameter
+        padding = Padding(indent_base, indent_diff)
+
+        section = SBSectionParameter(padding, name)
+        print 'parse_section_parameter', name, padding.base, padding.diff
+        node.sf.sd.append(section)
 
         parameter = None
         buffer = ['']
@@ -221,13 +237,13 @@ class RestructuredTextReader:
                 # a new parameter has been encountered
                 if parameter:
                     # if a parameter was being addressed, it has to be saved
-                    description = SBText(node.padding, buffer)
+                    description = SBText(padding, buffer)
                     parameter.sd.append(description)
                     buffer = ['']
                 infos = re.split('[^\w]+', line.strip()) 
                 name = infos[0]
                 type = infos[1] if len(infos) > 1 else ''
-                section.parameters[name] = SBParameter(node.padding, name, type)
+                section.parameters[name] = SBParameter(padding, name, type)
                 parameter = section.parameters[name]
             elif parameter:
                 # in a parameter description: if 'parameter' is not set,
@@ -246,7 +262,7 @@ class RestructuredTextReader:
         # in case the parameter is at the end of the list, but maybe recode this in a cleaner way
         if parameter:
             # if a parameter was being addressed, it has to be saved
-            description = SBText(node.padding, buffer)
+            description = SBText(padding, buffer)
             parameter.sd.append(description)
 
 

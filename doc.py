@@ -50,9 +50,11 @@ class SB:
                 if section_in:
                     section_in.swallow(section_out)
                 else:
-                    print 'add:', section_out.name
+                    #print 'add:', section_out.name
                     self.sd.append(section_out)
 
+    def make_docstring(self):
+        print '+++++empty'
 
             
 
@@ -95,6 +97,7 @@ class SBSectionParameter(SBSection):
         self.parameters = {}
 
     def make_docstring(self):
+        #print 'SBSectionParameter'
         return self.writer.make_docstring_parameters_sb(self)
 
     def swallow(self, sb):
@@ -121,7 +124,8 @@ class SBBase(SB):
 
     def make_docstring(self):
         content = ''.join([item.make_docstring() for item in self.sd])
-        return self.writer.start(self.padding) + content + self.writer.end(self.padding)
+        return '--' + content + '--'
+        #return self.writer.start(self.padding) + content + self.writer.end(self.padding)
 
 
 
@@ -136,8 +140,17 @@ class SBClass(SBBase):
         SBBase.__init__(self, padding)
 
 
+    def make_docstring(self):
+        content = self.writer.make_docstring_class(self)
+        return self.writer.start(self.padding) + content + self.writer.end(self.padding)
+
+
 
 class SBFunction(SBBase):
     def __init__(self, padding=None):
         SBBase.__init__(self, padding)
 
+
+    def make_docstring(self):
+        content = self.writer.make_docstring_function(self)
+        return self.writer.start(self.padding) + content + self.writer.end(self.padding)

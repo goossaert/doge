@@ -116,6 +116,7 @@ class Parser:
             if in_docstring:
                 # Handling docstrings
                 self.nodes[-1].docstring.append(line)
+                # TODO beware with endswith: maybe there is a \n at the very end
                 if line.strip().endswith('"""'):
                     # Exiting docstrings
                     in_docstring = False
@@ -189,7 +190,7 @@ class Parser:
                         node_class = node.find_parent_class()
                         section = node_class.sc.find_section('IVariables')
                         if section == None:
-                            section = SBSectionParameter(node_parent.padding, 'IVariables')
+                            section = SBSectionParameter(node_class.padding, 'IVariables')
                             node_class.sc.sd.append(section)
                         name = match_self.group('name')
                         section.parameters[name] = SBParameter(node.padding, name)
@@ -198,10 +199,11 @@ class Parser:
                     # Class variables
                     match_assignment = self.pattern_assignment.match(node.content)
                     if match_assignment and isinstance(node_parent, ClassNode):
-                        section = node_parent.sc.find_section('CVariables')
+                        node_class = node.find_parent_class()
+                        section = node_class.sc.find_section('CVariables')
                         if section == None:
-                            section = SBSectionParameter(node_parent.padding, 'CVariables')
-                            node_parent.sc.sd.append(section)
+                            section = SBSectionParameter(node_class.padding, 'CVariables')
+                            node_class.sc.sd.append(section)
                         name = match_assignment.group('name')
                         section.parameters[name] = SBParameter(node.padding, name)
                         #node_parent.variables_class[match_assignment.group('name')] = ''
