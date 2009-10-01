@@ -84,8 +84,7 @@ class RestructuredTextWriter:
                     #print 'doc_list:', section, name
                     docstring.append(section.make_docstring())
 
-        return '\n'.join(docstring)
-
+        return '\n\n'.join(docstring)
 
 
     def make_docstring_not_list(self, sb, list):
@@ -96,20 +95,21 @@ class RestructuredTextWriter:
                 if not name_section or name_section != name:
                     #docstring.append(section.make_docstring(name_section))
                     docstring.append(section.make_docstring())
-                    
-
-                    
                    
         return '\n'.join(docstring)
 
 
+    def make_docstring_file(self, sb):
+        list = ['Short', 'Long', 'Parameters']
+
+        priority = self.make_docstring_list(sb, list)
+        non_priority = self.make_docstring_not_list(sb, list)
+
+        return priority
+        #return priority + non_priority
+
 
     def make_docstring_class(self, sb):
-                    #self.buffer.append(self.rst.start(node.padding))
-                    #self.buffer.append(self.rst.end(node.padding))
-        #if not doc.find_section('CVariables', node.sf) and not doc.find_section('IVariables', node.sf):
-        #    return ''
-
         list = ['Short', 'Long', 'IVariables', 'CVariables']
         print 'make docstring class'
 
@@ -122,54 +122,14 @@ class RestructuredTextWriter:
         #return priority + non_priority
 
 
+    def make_docstring_function(self, sb):
+        list = ['Short', 'Long', 'Parameters']
 
+        priority = self.make_docstring_list(sb, list)
+        non_priority = self.make_docstring_not_list(sb, list)
 
-
-
-
-
-        pass
-
-        doc_variable = '%s%s\n\
-                        %s%s\n'.replace(' ','')
-
-        doc_section = '\n\
-                        %(indent)s:%(section)s:\n\
-                        %(variables)s'.replace(' ','')
-
-        doc_function = '%(indent)s\n\
-                        %(indent)s%(description)s%(content)s\
-                        %(indent)s\n'.replace(' ', '')
-
-        # TODO factorize with make_docstring for functions
-        diff = node.indent_children - node.indent
-        #indent_name = ' ' * (node.indent_children + diff)
-        #indent_description = ' ' * (node.indent_children + diff * 2)
-        #indent = ' ' * node.indent_children
-
-        #var_class = [doc_variable % (indent_name, name, indent_description, ''.join(description)) for name, description in node.variables_class.items()]
-        var_class = []
-        var_class_content = doc_section % {'indent': indent,
-                                           'section': 'CVariables',
-                                           'variables': ''.join(var_class)}
-
-        #var_instance = [doc_variable % (indent_name, name, indent_description, ''.join(description)) for name, description in node.variables_instance.items()]
-        var_instance = []
-        var_instance_content = doc_section % {'indent': indent,
-                                              'section': 'IVariables',
-                                              'variables': ''.join(var_instance)}
-
-        content = ''
-        if var_class:
-            content += var_class_content
-
-        if var_instance:
-            content += var_instance_content
-
-        return doc_function % {'indent': indent,
-                               #'description': ''.join(node.descriptions[0] + ['\n'] + node.descriptions[1]),
-                               'description': '',
-                               'content': content}
+        return priority
+        #return priority + non_priority
 
 
     def _cut_line(self, line, len_editable):
@@ -215,42 +175,7 @@ class RestructuredTextWriter:
         return [doc_parameter % (indent_name, name, indent_description, ''.join(description)) for name, description in parameters.items()]
 
 
-    def make_docstring_function(self, sb):
-        list = ['Short', 'Long', 'Parameters']
 
-        priority = self.make_docstring_list(sb, list)
-        non_priority = self.make_docstring_not_list(sb, list)
-
-        return priority
-        #return priority + non_priority
-
-
-
-
-
-        if not node.sf.find_section('Parameters'):
-            return ''
-        return ''
-
-        doc_function = '%(indent)s\n\
-                        %(description_short)s\
-                        %(description_long)s\
-                        %(indent)s:Parameters:\n\
-                        %(parameters)s\
-                        %(indent)s\n'.replace(' ','')
-
-        indent_diff = node.indent_children - node.indent
-        #indent_name = ' ' * (node.indent_children + indent_diff)
-        #indent_description = ' ' * (node.indent_children + indent_diff * 2)
-        #indent = ' ' * node.indent_children
-
-        parameters = self._make_docstring_parameters(indent_name, {})#node.parameters)
-
-        return doc_function % {'indent': indent,
-                               #'description': ''.join(node.descriptions[0] + ['\n'] + node.descriptions[1]),
-                               'description_short': '',
-                               'description_long': '',
-                               'parameters': ''.join(parameters)}
 
 
     def make_prototype_class(self, node):
@@ -263,27 +188,28 @@ class RestructuredTextWriter:
 
 
     def make_docstring_text_sb(self, section, level_indent):
-        #print 'ds text:', section
-        return section.padding.padding(level_indent) + ''.join(section.text)
+        print 'ds text:', section, section.text
+        return '\n'.join(section.padding.padding(level_indent) + line for line in section.text)
 
 
     def make_docstring_description_sb(self, section):
         #print 'ds description:', section
-        return ''.join(self.make_docstring_text_sb(s, level_indent=0) for s in section.sd)
+        return '\n'.join(self.make_docstring_text_sb(s, level_indent=0) for s in section.sd)
 
     
     def make_docstring_parameters_sb(self, sb):
-        doc_parameter = '%s%s\n\
-                         %s%s\n'.replace(' ','')
-        buffer = [sb.padding.padding(0) + ':' + sb.name +':\n']
+        doc_parameter = '%s\n\
+                         %s\n'.replace(' ','')
+        buffer = [sb.padding.padding(0) + ':' + sb.name + ':\n'] if sb.parameters else []
         for parameter in sb.parameters.values():
             name = parameter.name
             type = parameter.type
+            print 'ds parameters', name, type, parameter.sd
 
-            text = ''.join([self.make_docstring_text_sb(s, level_indent=2) for s in parameter.sd])
+            text = ''.join([self.make_docstring_text_sb(s, level_indent=1) for s in parameter.sd])
             doc_title = '%(indent)s%(name)s : %(type)s' if type else '%(indent)s%(name)s'
             title = doc_title % {'name': name, 'type': type, 'indent': sb.padding.padding(1)}
-            docstring = doc_parameter % ('', title, '', text)
+            docstring = doc_parameter % (title, text)
             buffer.append(docstring)
         return ''.join(buffer)
 

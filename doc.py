@@ -134,6 +134,10 @@ class SBFile(SBBase):
         SBBase.__init__(self, padding)
 
 
+    def make_docstring(self):
+        content = self.writer.make_docstring_file(self)
+        return self.writer.start(self.padding) + content + self.writer.end(self.padding)
+
 
 class SBClass(SBBase):
     def __init__(self, padding=None):

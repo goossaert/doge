@@ -53,10 +53,20 @@ class RestructuredTextReader:
 
 
     def _cleanup_parameters(self, parameters):
-        strip_newline = lambda string: '' if string == '\n' else string + '\n'
+        strip_newline = lambda string: '' if string == '\n' else string
 
-        for name, descriptions in parameters.items():
-            parameters[name] = [strip_newline(d) for d in descriptions if d]
+        for name, parameter in parameters.items():
+            text = parameter.sd[0].text
+            text = [strip_newline(line) for line in text if line]
+            text = [line for id, line in enumerate(text) if line and not id or text[id] or text[id - 1]]
+            # text is a list, so why do i have to do that? 
+            parameter.sd[0].text = text
+
+
+    def _cleanup_section(self, node, name):
+        section = node.sf.find_section(name)
+        if section:
+              self._cleanup_parameters(section.parameters)
 
 
     def _fill_descriptions(self, node, descriptions):
@@ -75,6 +85,7 @@ class RestructuredTextReader:
 
     def parse_docstring_file(self, node):
         self.parse_docstring(node)
+        self._cleanup_section(node, 'Parameters')
         return
         titles = [('Parameters', node.parameters, node.types)]
         self._fill_descriptions(node, descriptions)
@@ -83,6 +94,8 @@ class RestructuredTextReader:
 
     def parse_docstring_class(self, node):
         self.parse_docstring(node)
+        self._cleanup_section(node, 'CVariables')
+        self._cleanup_section(node, 'IVariables')
         return
         titles = [('CVariables', node.variables_class, node.types_class),
                   ('IVariables', node.variables_instance, node.types_instance)]
@@ -92,6 +105,7 @@ class RestructuredTextReader:
 
     def parse_docstring_function(self, node):
         self.parse_docstring(node)
+        self._cleanup_section(node, 'Parameters')
         return
         titles = [('Parameters', node.parameters, node.types)]
         self._fill_descriptions(node, descriptions)
@@ -221,12 +235,13 @@ class RestructuredTextReader:
         indent_diff = node.indent_children - node.indent
         indent_base = node.indent_children
         #indent_base = len(pattern_indent.match(docstring[0]).group('indent'))
-        indent_parameter = len(pattern_indent.match(docstring[0]).group('indent')) + indent_diff
+        indent_parameter = len(pattern_indent.match(docstring[0]).group('indent'))
         indent_description = indent_parameter
         padding = Padding(indent_base, indent_diff)
 
         section = SBSectionParameter(padding, name)
-        print 'parse_section_parameter', name, padding.base, padding.diff
+        print 'parse_section_parameter', name, padding.base, padding.diff, 'i para', indent_parameter
+        print 'docstring', docstring
         node.sf.sd.append(section)
 
         parameter = None
@@ -239,6 +254,7 @@ class RestructuredTextReader:
                     # if a parameter was being addressed, it has to be saved
                     description = SBText(padding, buffer)
                     parameter.sd.append(description)
+                    print 'param', parameter, description, buffer
                     buffer = ['']
                 infos = re.split('[^\w]+', line.strip()) 
                 name = infos[0]
@@ -264,6 +280,7 @@ class RestructuredTextReader:
             # if a parameter was being addressed, it has to be saved
             description = SBText(padding, buffer)
             parameter.sd.append(description)
+            print 'param', parameter, description, buffer
 
 
     # TODO rename
