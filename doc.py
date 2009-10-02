@@ -128,7 +128,6 @@ class SBBase(SB):
         #return self.writer.start(self.padding) + content + self.writer.end(self.padding)
 
 
-
 class SBFile(SBBase):
     def __init__(self, padding=None):
         SBBase.__init__(self, padding)
@@ -136,7 +135,7 @@ class SBFile(SBBase):
 
     def make_docstring(self):
         content = self.writer.make_docstring_file(self)
-        return self.writer.start(self.padding) + content + self.writer.end(self.padding)
+        return self.writer.start(self.padding, content) + content + self.writer.end(self.padding)
 
 
 class SBClass(SBBase):
@@ -146,7 +145,7 @@ class SBClass(SBBase):
 
     def make_docstring(self):
         content = self.writer.make_docstring_class(self)
-        return self.writer.start(self.padding) + content + self.writer.end(self.padding)
+        return self.writer.start(self.padding, content) + content + self.writer.end(self.padding, content)
 
 
 
@@ -157,4 +156,4 @@ class SBFunction(SBBase):
 
     def make_docstring(self):
         content = self.writer.make_docstring_function(self)
-        return self.writer.start(self.padding) + content + self.writer.end(self.padding)
+        return self.writer.start(self.padding, content) + content + self.writer.end(self.padding, content)

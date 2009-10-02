@@ -92,8 +92,8 @@ class FileNode(Node):
         return None
 
 
-    def obs_make_docstring(self):
-        return self.writer.make_docstring_file(self)
+    def make_docstring(self):
+        return self.sc.make_docstring(self)
 
 
     def parse_docstring(self):

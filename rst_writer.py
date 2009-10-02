@@ -58,16 +58,17 @@ class RestructuredTextWriter:
             pass
 
 
-    def start(self, padding):
-        return padding.padding(0) + '"""\n'
+    def start(self, padding, content):
+        if not content:
+            return ''
+        ret = '\n' if len(content) > 1 else ''
+        return padding.padding(0) + '"""' + ret
               
 
-    def end(self, padding):
-        return self.start(padding)
-
-
-    def make_docstring_file(self, node):
-        return ''
+    def end(self, padding, content):
+        if not content:
+            return ''
+        return padding.padding(0) + '"""' + '\n'
 
 
     def make_docstring_list(self, sb, list):
@@ -100,6 +101,7 @@ class RestructuredTextWriter:
 
 
     def make_docstring_file(self, sb):
+        # TODO make sure the parameters are detected, or fix the code that handles parent/class nodes.
         list = ['Short', 'Long', 'Parameters']
 
         priority = self.make_docstring_list(sb, list)
