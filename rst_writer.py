@@ -85,7 +85,7 @@ class RestructuredTextWriter:
                     #print 'doc_list:', section, name
                     docstring.append(section.make_docstring())
 
-        return '\n\n'.join(docstring)
+        return '\n'.join(docstring)
 
 
     def make_docstring_not_list(self, sb, list):

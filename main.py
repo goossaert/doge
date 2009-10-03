@@ -42,13 +42,3 @@ if __name__ == '__main__':
     writer.write(parser.node_file)
     pass
     print ''.join(writer.buffer)
-
-    ds = ['    truc\n',
-          '        description\n',
-          '        on multiple lines.',
-          '    test : type\n',
-          '                 \n',
-          '    vide\n',
-          '    bombe\n',
-          '        interesring\n']
-
