@@ -45,11 +45,11 @@ class Node:
 
 
     def find_parent_class(self):
-        return self.parent.find_parent_class()
+        return self.parent.find_parent_class() if self.parent else None
 
 
     def find_parent_function(self):
-        return self.parent.find_parent_function()
+        return self.parent.find_parent_function() if self.parent else None
 
 
     def make_docstring(self):

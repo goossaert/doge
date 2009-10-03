@@ -106,6 +106,7 @@ class RestructuredTextReader:
     def parse_docstring_function(self, node):
         self.parse_docstring(node)
         self._cleanup_section(node, 'Parameters')
+        self._cleanup_section(node, 'Exceptions')
         return
         titles = [('Parameters', node.parameters, node.types)]
         self._fill_descriptions(node, descriptions)
@@ -157,7 +158,7 @@ class RestructuredTextReader:
         options_current = None
         section_current = None
         sections_text = ['Returns', 'Raises']
-        sections_parameter = ['IVariables', 'CVariables', 'Parameters']
+        sections_parameter = ['IVariables', 'CVariables', 'Parameters', 'Exceptions']
         in_description_short = True
         in_description_long = False
 
@@ -298,6 +299,4 @@ class RestructuredTextReader:
             buffer.append('')
 
         return buffer
-
-
 

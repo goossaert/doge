@@ -125,7 +125,7 @@ class RestructuredTextWriter:
 
 
     def make_docstring_function(self, sb):
-        list = ['Short', 'Long', 'Parameters']
+        list = ['Short', 'Long', 'Parameters', 'Exceptions']
 
         priority = self.make_docstring_list(sb, list)
         non_priority = self.make_docstring_not_list(sb, list)

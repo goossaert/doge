@@ -94,6 +94,14 @@ class Parser:
         """, re.VERBOSE | re.DOTALL)
 
 
+    pattern_exception = re.compile(
+        r"""
+        (?P<indent>[\s]*)
+        raise[\s]*
+        (?P<name>[\w]*)
+        """, re.VERBOSE | re.DOTALL)
+
+
     def __init__(self):
         self.module = None
         self.nodes = []
@@ -173,6 +181,19 @@ class Parser:
         self._print(self.node_file)
 
 
+    def _handle_section(self, pattern, node_current, node_parent, title):
+        match = pattern.match(node_current.content)
+        if match:
+            name = match.group('name')
+            if name:
+                section = node_parent.sc.find_section(title)
+                if not section:
+                    section = SBSectionParameter(node_parent.padding, title)
+                    node_parent.sc.sd.append(section)
+                print 'handle section:   ', title, name
+                section.parameters[name] = SBParameter(node_current.padding, name)
+
+
     # TODO check if this is possible to put all this in the node classes.
     # TODO handle return
     # TODO handle raise
@@ -183,30 +204,29 @@ class Parser:
             for node in node_parent.content:
                 if node.to_explore:
                     stack.append(node)
-                else: 
+                else:
+                    node_class = node.find_parent_class()# if node != None else None
+
                     # Instance variables
-                    match_self = self.pattern_self.match(node.content)
-                    if match_self:
-                        node_class = node.find_parent_class()
-                        section = node_class.sc.find_section('IVariables')
-                        if section == None:
-                            section = SBSectionParameter(node_class.padding, 'IVariables')
-                            node_class.sc.sd.append(section)
-                        name = match_self.group('name')
-                        section.parameters[name] = SBParameter(node.padding, name)
-                        #node_class.variables_instance[match_self.group('name')] = ''
+                    self._handle_section(self.pattern_self,
+                                         node,
+                                         node_class,
+                                         'IVariables')
 
                     # Class variables
-                    match_assignment = self.pattern_assignment.match(node.content)
-                    if match_assignment and isinstance(node_parent, ClassNode):
-                        node_class = node.find_parent_class()
-                        section = node_class.sc.find_section('CVariables')
-                        if section == None:
-                            section = SBSectionParameter(node_class.padding, 'CVariables')
-                            node_class.sc.sd.append(section)
-                        name = match_assignment.group('name')
-                        section.parameters[name] = SBParameter(node.padding, name)
-                        #node_parent.variables_class[match_assignment.group('name')] = ''
+                    if isinstance(node_parent, ClassNode):
+                        self._handle_section(self.pattern_assignment,
+                                             node,
+                                             node_class,
+                                             'CVariables')
+
+                    # Exceptions
+                    self._handle_section(self.pattern_exception,
+                                         node,
+                                         node_parent,
+                                         'Exceptions')
+
+                    # Return
                     
             if isinstance(node_parent, FunctionNode):
                 section = SBSectionParameter(node_parent.padding, 'Parameters')
