@@ -72,7 +72,6 @@ class RestructuredTextWriter:
 
 
     def make_docstring_list(self, sb, list):
-        #print 'make_docstring_list'
         docstring = []
         #list = list[:] # local copy
         for name in list:
@@ -82,7 +81,6 @@ class RestructuredTextWriter:
             for section in sb.sd:
                 name_section = getattr(section, 'name', None)
                 if name_section and name_section == name:
-                    #print 'doc_list:', section, name
                     docstring.append(section.make_docstring())
 
         return '\n'.join(docstring)
@@ -113,12 +111,10 @@ class RestructuredTextWriter:
 
     def make_docstring_class(self, sb):
         list = ['Short', 'Long', 'IVariables', 'CVariables']
-        print 'make docstring class'
 
         priority = self.make_docstring_list(sb, list)
         non_priority = self.make_docstring_not_list(sb, list)
 
-        print 'writer class'
 
         return priority
         #return priority + non_priority
@@ -179,12 +175,10 @@ class RestructuredTextWriter:
 
 
     def make_docstring_text_sb(self, section, level_indent):
-        print 'ds text:', section, section.text
         return '\n'.join(section.padding.padding(level_indent) + line for line in section.text)
 
 
     def make_docstring_description_sb(self, section):
-        #print 'ds description:', section
         return '\n'.join(self.make_docstring_text_sb(s, level_indent=0) for s in section.sd)
 
     
@@ -195,7 +189,6 @@ class RestructuredTextWriter:
         for parameter in sb.parameters.values():
             name = parameter.name
             type = parameter.type
-            print 'ds parameters', name, type, parameter.sd
 
             text = ''.join([self.make_docstring_text_sb(s, level_indent=1) for s in parameter.sd])
             doc_title = '%(indent)s%(name)s : %(type)s' if type else '%(indent)s%(name)s'

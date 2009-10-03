@@ -43,7 +43,8 @@ pattern_section = re.compile(
     (?P<title>[\w]*)
     ([\s]*(?P<option>[\w]*))?
     [:]
-    .*?
+    ([\s]*(?P<content>[.]*?))?
+    [\s]*?
     """, re.VERBOSE | re.DOTALL)
 
 
@@ -57,7 +58,9 @@ class RestructuredTextReader:
 
         for name, parameter in parameters.items():
             text = parameter.sd[0].text
+            # replace new lines by empty lines
             text = [strip_newline(line) for line in text if line]
+            # replace empty line sequences by only one new line
             text = [line for id, line in enumerate(text) if line and not id or text[id] or text[id - 1]]
             # text is a list, so why do i have to do that? 
             parameter.sd[0].text = text
@@ -69,18 +72,18 @@ class RestructuredTextReader:
               self._cleanup_parameters(section.parameters)
 
 
-    def _fill_descriptions(self, node, descriptions):
-        node.descriptions = descriptions
+    #def _fill_descriptions(self, node, descriptions):
+    #    node.descriptions = descriptions
 
 
-    def _fill_parameters(self, titles, sections):
-        for title in titles:
-            (name, parameters, types) = title
-            if name in sections:
-                parameters.update(sections[name][0]) 
-                types.update(sections[name][1])
-                self._cleanup_parameters(parameters)
-                self._cleanup_parameters(types)
+    #def _fill_parameters(self, titles, sections):
+    #    for title in titles:
+    #        (name, parameters, types) = title
+    #        if name in sections:
+    #            parameters.update(sections[name][0]) 
+    #            types.update(sections[name][1])
+    #            self._cleanup_parameters(parameters)
+    #            self._cleanup_parameters(types)
 
 
     def parse_docstring_file(self, node):
@@ -116,9 +119,7 @@ class RestructuredTextReader:
 
 
     def _add_description(self, name, node, text):
-        pass
         section = SBSectionDescription(node.padding, name)
-        print '_add_description:', name, node.padding.base, node.padding.diff
         description = SBText(node.padding, text)
         section.sd.append(description)
         node.sf.sd.append(section)
@@ -151,6 +152,7 @@ class RestructuredTextReader:
 
         for id_line, line in enumerate(docstring):
 
+            # TODO for """, that should be endswith()
             if any([line.strip().startswith(s) for s in ('@', ':', '"""')]):
                 # section or end of docstring detected
                 if section_current:
@@ -173,7 +175,7 @@ class RestructuredTextReader:
                 match = pattern_section.match(line)
                 if match:
                     section_current = match.group('title')
-                    options_current = match.group('option')
+                    options_current = [match.group('option'), match.group('content')]
                 id_section = id_line
 
 
@@ -192,6 +194,37 @@ class RestructuredTextReader:
         return lines[id_start:]
 
 
+    # TODO from python_lang.py; delete?
+    def _handle_single_parameter(self, name, options, node, title, docstring):
+        if name:
+            section = node.sf.find_section(title)
+            if not section:
+                section = SBSectionParameter(node.padding, title)
+                node.sf.sd.append(section)
+            section.parameters[name] = SBParameter(node.padding, name)
+            first_line = [options[1].strip()] if options[1] else []
+            buffer = self._handle_description(indent_current,
+                                              indent_description,
+                                              line,
+                                              first_line + docstring)
+            description = SBText(node.padding, buffer)
+            parameter.sd.append(description)
+
+
+
+    def _handle_single_description(self, name, options, node, title, docstring):
+        return
+        description = SBText(padding, buffer)
+        section = SBSectionDescription(node.padding, name, options)
+
+        #print 'parse_section_text:', name, padding.base, padding.diff
+        section.sd.append(description)
+        node.sf.sd.append(section)
+
+
+        pass
+
+
     def parse_section_single(self, name, options, node, docstring):
         indent_diff = node.indent_children - node.indent
         indent_base = len(pattern_indent.match(docstring[0]).group('indent'))
@@ -199,15 +232,105 @@ class RestructuredTextReader:
 
         # get the description text, and then decide on what to do based on the name.
 
-        pass
+        parameters = {# Functions and Methods
+                      'param':          'Parameters',
+                      'parameter':      'Parameters',
+                      'arg':            'Parameters',
+                      'argument':       'Parameters',
+                      'type':           'Types',
+                      'keyword':        'Keywords',
+                      'kwarg':          'Keywords',
+                      'kwparams':       'Keywords',
+                      'raise':          'Exceptions',
+                      'raises':         'Exceptions',
+                      'except':         'Exceptions',
+                      'exception':      'Exceptions',
 
+                      # Variables
+                      'ivar':           'IVariables',
+                      'ivariables':     'IVariables',
+                      'cvar':           'CVariables',
+                      'cvariables':     'CVariables',
+                      'var':            'Variables',
+                      'variable':       'Variables',
 
+                      # Grouping and Sorting
+                      'group':          'Groups',
 
-    def parse_section_text(self, name, options, node, docstring):
-        docstring = self._strip_docstring(docstring)
+                      # Status
+                      'todo':           'Todos'}
+
+        descriptions = {# Functions and Methods
+                        'type':             'Type',
+                        'return':           'Return',
+                        'returns':          'Return',
+                        'rtype':            'ReturnType',
+                        'returntype':       'ReturnType',
+
+                        # Grouping and Sorting
+                        'sort':             'Sort',
+
+                        # Related Topics
+                        'see':              'SeeAlso',
+                        'seealso':          'SeeAlso',
+
+                        # Notes and Warnings 
+                        'node':             'Note',
+                        'attention':        'Attention',
+                        'bug':              'Bug',
+                        'warning':          'Warning',
+                        'warn':             'Warning',
+
+                        # Formal Conditions 
+                        'requires':       'Requires',
+                        'require':        'Requires',
+                        'requirements':   'Requires',
+                        'precondition':   'PreCondition',
+                        'precond':        'PreCondition',
+                        'postcondition':  'PostCondition',
+                        'postcond':       'PostCondition',
+                        'invariant':      'Invariant',
+
+                        # Bibliographic Information
+                        'author':         'Author',
+                        'organization':   'Organization',
+                        'org':            'Organization',
+                        'copyright':      'Copyright',
+                        '(c)':            'Copyright',
+                        'license':        'License',
+                        'contact':        'Contact',
+                        
+                        # Summarization 
+                        'summary':        'Summary',
+
+                        # Status
+                        'version':        'Version',
+                        'deprecated':     'Deprecated',
+                        'since':          'Since',
+                        'status':         'Status',
+                        'change':         'Change',
+                        'changed':        'Change',
+                        'permission':     'Permission',
+                }
+
+        print 'options', len(options), options
+        if options[0]:
+            if options[0] in parameters:
+                title = parameters[options[0]] 
+                self._handle_single_parameter(name, options, node, title)
+        elif options[0] in descriptions:
+            pass
+                #def parse_section_single(self, name, options, node, docstring):
+
+    # TODO this functions is never executed?
+    def parse_section_text(self, name, options,  node, docstring):
+        print 'parse_section_text', name, options, node, docstring
+        #docstring = docstring[1:]
+        docstring = self._strip_lines(docstring)
 
         indent_diff = node.indent_children - node.indent
         indent_base = len(pattern_indent.match(docstring[0]).group('indent'))
+        indent_description = indent_base + indent_diff
         padding = Padding(indent_base, indent_diff)
         #print 'parse_section_text:', name, node.padding.base, node.padding.diff
         buffer = ['']
@@ -230,6 +353,7 @@ class RestructuredTextReader:
         if not docstring:
             return {}
 
+        #docstring = docstring[1:]
         docstring = self._strip_first_empty_lines(docstring)
 
 
@@ -299,18 +423,22 @@ class RestructuredTextReader:
 
 
     # TODO rename
-    def _handle_description(self, indent_current, indent_objective, line, buffer):
+    def _handle_description(self, indent_current, indent_objective, lines, buffer):
         buffer = buffer[:]
-        if indent_current == indent_objective:
-            # regular description line, so just add the content
-            space = ' ' if buffer[-1] else ''
-            buffer[-1] += space + line.strip()
-        else:
-            # not a regular description line, so put in its own string
-            diff = indent_current - indent_objective
-            space = ' ' * diff if diff > 0 else ''
-            buffer.append(space + line.strip())
-            buffer.append('')
+        if not isinstance(lines, list):
+            lines = [lines]
+
+        for line in lines:
+            if indent_current == indent_objective:
+                # regular description line, so just add the content
+                space = ' ' if buffer[-1] else ''
+                buffer[-1] += space + line.strip()
+            else:
+                # not a regular description line, so put in its own string
+                diff = indent_current - indent_objective
+                space = ' ' * diff if diff > 0 else ''
+                buffer.append(space + line.strip())
+                buffer.append('')
 
         return buffer
 

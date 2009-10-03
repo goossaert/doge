@@ -202,8 +202,9 @@ class PythonParser:
                 section = node_parent.sc.find_section(title)
                 if not section:
                     section = SBSectionParameter(node_parent.padding, title)
+                    # the current class is obviously a CodeNode, so the section
+                    # is added to the parent which is a File, Class or Function
                     node_parent.sc.sd.append(section)
-                print 'handle section:   ', title, name
                 section.parameters[name] = SBParameter(node_current.padding, name)
 
 
