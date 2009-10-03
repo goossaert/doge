@@ -30,14 +30,16 @@ from padding import Padding
 
 
 class Node:
+    reader = None
+    writer = None
+    lang = None
+
     def __init__(self, indent=None, to_explore=False):
         self.indent = indent
         self.indent_children = None
         self.content = []
         self.parent = None
         self.to_explore = to_explore
-        self.reader = RestructuredTextReader()
-        self.writer = RestructuredTextWriter()
         self.merger = Merger()
         self.padding = None
         self.sf = None
@@ -133,7 +135,7 @@ class ClassNode(Node):
 
 
     def make_prototype(self):
-        return self.writer.make_prototype_class(self)
+        return self.lang.make_prototype_class(self)
          
 
     def parse_docstring(self):
@@ -168,7 +170,7 @@ class FunctionNode(Node):
 
 
     def make_prototype(self):
-        return self.writer.make_prototype_function(self)
+        return self.lang.make_prototype_function(self)
 
 
     def parse_docstring(self):

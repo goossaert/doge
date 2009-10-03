@@ -20,14 +20,20 @@ __docformat__ = "restructuredtext en"
 ## You should have received a copy of the GNU General Public License
 ## along with pydoge.  If not, see <http://www.gnu.org/licenses/>.
 
-from file_parser_python import Parser
+from python_lang import PythonParser
+from python_lang import PythonLang
 from writer import Writer
 from rst_reader import RestructuredTextReader
 from rst_writer import RestructuredTextWriter
+from node import Node
 
 
 if __name__ == '__main__':
-    parser = Parser()
+    Node.writer = RestructuredTextWriter()
+    Node.reader = RestructuredTextReader()
+    Node.lang = PythonLang()
+
+    parser = PythonParser()
     parser.read_file('truc.py')
     parser.print_file()
     parser.build_structure()

@@ -178,17 +178,6 @@ class RestructuredTextWriter:
 
 
 
-
-
-    def make_prototype_class(self, node):
-        base_classes = '(' + node.definition + ')' if node.definition else ''
-        return node.indent * ' ' + 'class ' + node.name + base_classes + ':'
-
-
-    def make_prototype_function(self, node):
-        return node.indent * ' ' + 'def ' + node.name + '(' + node.definition + ')' + ':'
-
-
     def make_docstring_text_sb(self, section, level_indent):
         print 'ds text:', section, section.text
         return '\n'.join(section.padding.padding(level_indent) + line for line in section.text)

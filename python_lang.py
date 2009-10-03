@@ -1,5 +1,5 @@
 """
-Python docstring generator.
+Python language module.
 """
 __docformat__ = "restructuredtext en"
 
@@ -28,7 +28,20 @@ import doc
 from doc import *
 from node import *
 
-class Parser:
+
+class PythonLang:
+
+    def make_prototype_class(self, node):
+        base_classes = '(' + node.definition + ')' if node.definition else ''
+        return node.indent * ' ' + 'class ' + node.name + base_classes + ':'
+
+
+    def make_prototype_function(self, node):
+        return node.indent * ' ' + 'def ' + node.name + '(' + node.definition + ')' + ':'
+
+
+
+class PythonParser:
     """
     short description.
 
