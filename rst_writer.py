@@ -89,45 +89,50 @@ class RestructuredTextWriter:
     def make_docstring_not_list(self, sb, list):
         docstring = []
         for section in sb.sd:
-            for name in list:
-                name_section = getattr(section, 'name', None)
-                if not name_section or name_section != name:
-                    #docstring.append(section.make_docstring(name_section))
-                    docstring.append(section.make_docstring())
+            name_section = getattr(section, 'name', None)
+            print 'section', section
+            if not name_section or name_section not in list:
+                #docstring.append(section.make_docstring(name_section))
+                docstring.append(section.make_docstring())
+
+        print '____ not list', docstring
                    
         return '\n'.join(docstring)
 
 
     def make_docstring_file(self, sb):
         # TODO make sure the parameters are detected, or fix the code that handles parent/class nodes.
-        list = ['Short', 'Long', 'Parameters']
+        list = ['*Short', '*Long', 'Parameters']
 
         priority = self.make_docstring_list(sb, list)
         non_priority = self.make_docstring_not_list(sb, list)
+        #print 'make', priority, non_priority
 
-        return priority
-        #return priority + non_priority
+        #return priority
+        return priority + non_priority
 
 
     def make_docstring_class(self, sb):
-        list = ['Short', 'Long', 'IVariables', 'CVariables']
+        list = ['*Short', '*Long', 'IVariables', 'CVariables']
 
         priority = self.make_docstring_list(sb, list)
         non_priority = self.make_docstring_not_list(sb, list)
+        #print 'make', priority, non_priority
 
 
-        return priority
-        #return priority + non_priority
+        #return priority
+        return priority + non_priority
 
 
     def make_docstring_function(self, sb):
-        list = ['Short', 'Long', 'Parameters', 'Exceptions']
+        list = ['*Short', '*Long', 'Parameters', 'Exceptions']
 
         priority = self.make_docstring_list(sb, list)
         non_priority = self.make_docstring_not_list(sb, list)
+        #print 'make', priority, non_priority
 
-        return priority
-        #return priority + non_priority
+        #return priority
+        return priority + non_priority
 
 
     def _cut_line(self, line, len_editable):
@@ -161,16 +166,16 @@ class RestructuredTextWriter:
                 formatted.append(' ' * len_indent + line[start, end])
                 
 
-    def _make_docstring_description(self, node):
-        doc_description = '%s%s\n'.replace(' ','')
-        description_short = [doc_description % (indent, line) for line in node.descriptions[0]]
-        description_long = [doc_description % (indent, line) for line in node.descriptions[1]]
+    #def _make_docstring_description(self, node):
+    #    doc_description = '%s%s\n'.replace(' ','')
+    #    description_short = [doc_description % (indent, line) for line in node.descriptions[0]]
+    #    description_long = [doc_description % (indent, line) for line in node.descriptions[1]]
 
 
-    def _make_docstring_parameters(self, node, parameters):
-        doc_parameter = '%s%s\n\
-                         %s%s\n'.replace(' ','')
-        return [doc_parameter % (indent_name, name, indent_description, ''.join(description)) for name, description in parameters.items()]
+    #def _make_docstring_parameters(self, node, parameters):
+    #    doc_parameter = '%s%s\n\
+    #                    %s%s\n'.replace(' ','')
+    #    return [doc_parameter % (indent_name, name, indent_description, ''.join(description)) for name, description in parameters.items()]
 
 
 
@@ -178,8 +183,10 @@ class RestructuredTextWriter:
         return '\n'.join(section.padding.padding(level_indent) + line for line in section.text)
 
 
-    def make_docstring_description_sb(self, section):
-        return '\n'.join(self.make_docstring_text_sb(s, level_indent=0) for s in section.sd)
+    def make_docstring_description_sb(self, sb):
+        title = sb.padding.padding(0) + ':' + sb.name + ':\n' if not sb.name.startswith('*') else ''
+        level = 0 if sb.name.startswith('*') else 1
+        return title + '\n'.join(self.make_docstring_text_sb(s, level_indent=level) for s in sb.sd)
 
     
     def make_docstring_parameters_sb(self, sb):

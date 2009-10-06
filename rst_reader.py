@@ -43,8 +43,8 @@ pattern_section = re.compile(
     (?P<title>[\w]*)
     ([\s]*(?P<option>[\w]*))?
     [:]
-    ([\s]*(?P<content>[.]*?))?
-    [\s]*?
+    ([\s]*(?P<content>.*))?
+    [\s]*
     """, re.VERBOSE | re.DOTALL)
 
 
@@ -134,8 +134,8 @@ class RestructuredTextReader:
         docstring = self._strip_lines(docstring)
         if docstring and not docstring[0].startswith('"""'):
             id_cut = self._find_cut(docstring, lambda s: not s.strip())
-            self._add_description('Short', node, docstring[:id_cut])
-            self._add_description('Long', node, docstring[id_cut+1:])
+            self._add_description('*Short', node, docstring[:id_cut])
+            self._add_description('*Long', node, docstring[id_cut+1:])
 
 
     # TODO modify the function so that it first split the docstring
@@ -143,40 +143,51 @@ class RestructuredTextReader:
     def _parse_docstring_sections(self, node, docstring):
         docstring = self._strip_first_empty_lines(node.docstring[1:]) # omit the starting '"""'
         id_section = None
+        line_previous = ''
         options_current = None
+        options_previous = None
         section_current = None
+        section_previous = None
         sections_text = ['Returns', 'Raises']
         sections_parameter = ['IVariables', 'CVariables', 'Variables', 'Parameters', 'Exceptions']
         in_description_short = True
         in_description_long = False
 
-        for id_line, line in enumerate(docstring):
+        for id_line, line_current in enumerate(docstring):
 
             # TODO for """, that should be endswith()
-            if any([line.strip().startswith(s) for s in ('@', ':', '"""')]):
+            if any([line_current.strip().startswith(s) for s in ('@', ':', '"""')]):
                 # section or end of docstring detected
                 if section_current:
                     # already in a section, hence we have to treat it before
                     # setting up the new one
                     #sb_section = SBSection(node.padding, section_current, option_current)
-                    if line.strip().startswith('@'):
+                    print 'cur:', line_current
+                    print 'prev:', line_previous
+                    print '---'
+                    if line_previous.strip().startswith('@'):
                         parser = self.parse_section_single
-                    elif section_current in sections_parameter: 
+                    elif section_previous in sections_parameter: 
                         parser = self.parse_section_parameter 
                     else:
                         parser = self.parse_section_text
 
-                    parser(section_current,
-                           options_current,
+                    parser(section_previous,
+                           options_previous,
                            node,
                            docstring[id_section + 1:id_line])
                     #node.sf.append(sb_section)
                      
-                match = pattern_section.match(line)
+                match = pattern_section.match(line_current)
                 if match:
                     section_current = match.group('title')
                     options_current = [match.group('option'), match.group('content')]
+                    print 'options_current', options_current
                 id_section = id_line
+
+                line_previous = line_current
+                section_previous = section_current
+                options_previous = options_current
 
 
     def _strip_lines(self, lines):
@@ -196,24 +207,43 @@ class RestructuredTextReader:
 
     # TODO from python_lang.py; delete?
     def _handle_single_parameter(self, name, options, node, title, docstring):
-        if name:
-            section = node.sf.find_section(title)
-            if not section:
-                section = SBSectionParameter(node.padding, title)
-                node.sf.sd.append(section)
-            section.parameters[name] = SBParameter(node.padding, name)
-            first_line = [options[1].strip()] if options[1] else []
-            buffer = self._handle_description(indent_current,
-                                              indent_description,
-                                              line,
-                                              first_line + docstring)
-            description = SBText(node.padding, buffer)
-            parameter.sd.append(description)
+        if not name:
+            return
+
+        section = node.sf.find_section(title)
+        if not section:
+            section = SBSectionParameter(node.padding, title)
+            node.sf.sd.append(section)
+        parameter = SBParameter(node.padding, name)
+        section.parameters[name] = parameter
+
+        indent_diff = node.indent_children - node.indent
+        indent_base = node.indent_children + indent_diff
+        indent_description = indent_base + indent_diff
+        padding = Padding(indent_base, indent_diff)
+
+        first_line = [options[1].strip()] if options[1] else []
+        buffer = ['']
+        buffer = self._handle_description(indent_base,
+                                          indent_description,
+                                          first_line + docstring,
+                                          buffer)
+        description = SBText(padding, buffer)
+        parameter.sd.append(description)
 
 
 
     def _handle_single_description(self, name, options, node, title, docstring):
+        self._add_description(title, node, [options[1]] + docstring)
+        print '++++++++ handle description'
         return
+
+        indent_diff = node.indent_children - node.indent
+        indent_base = node.indent_children + indent_diff
+        indent_description = indent_base + indent_diff
+        padding = Padding(indent_base, indent_diff)
+
+
         description = SBText(padding, buffer)
         section = SBSectionDescription(node.padding, name, options)
 
@@ -222,13 +252,13 @@ class RestructuredTextReader:
         node.sf.sd.append(section)
 
 
-        pass
+
 
 
     def parse_section_single(self, name, options, node, docstring):
-        indent_diff = node.indent_children - node.indent
-        indent_base = len(pattern_indent.match(docstring[0]).group('indent'))
-        padding = Padding(indent_base, indent_diff)
+        #indent_diff = node.indent_children - node.indent
+        #indent_base = len(pattern_indent.match(docstring[0]).group('indent'))# + indent_diff
+        #padding = Padding(indent_base, indent_diff)
 
         # get the description text, and then decide on what to do based on the name.
 
@@ -313,16 +343,19 @@ class RestructuredTextReader:
                         'permission':     'Permission',
                 }
 
-        print 'options', len(options), options
         if options[0]:
-            if options[0] in parameters:
-                title = parameters[options[0]] 
-                self._handle_single_parameter(name, options, node, title)
-        elif options[0] in descriptions:
-            pass
-                #def parse_section_single(self, name, options, node, docstring):
+            # it has a argument, so it is a parameter
+            if name in parameters:
+                print '-- option parameters', len(options), options, name
+                #section = node.sf.find_section(parameters[name])
+                #print 'title', title
+                self._handle_single_parameter(name, options, node, parameters[name], docstring)
+        elif name in descriptions:
+            print '-- option descriptions', len(options), options, name
+            self._handle_single_description(name, options, node, descriptions[name], docstring)
 
-    # TODO this functions is never executed?
+
+    # TODO this function is never executed?
     def parse_section_text(self, name, options,  node, docstring):
         print 'parse_section_text', name, options, node, docstring
         #docstring = docstring[1:]
@@ -429,6 +462,8 @@ class RestructuredTextReader:
             lines = [lines]
 
         for line in lines:
+            indent_current = len(pattern_indent.match(line).group('indent'))
+            print 'current', indent_current, 'obj', indent_objective, 'buffer', buffer
             if indent_current == indent_objective:
                 # regular description line, so just add the content
                 space = ' ' if buffer[-1] else ''
@@ -436,6 +471,7 @@ class RestructuredTextReader:
             else:
                 # not a regular description line, so put in its own string
                 diff = indent_current - indent_objective
+                print 'diff', diff
                 space = ' ' * diff if diff > 0 else ''
                 buffer.append(space + line.strip())
                 buffer.append('')

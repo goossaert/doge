@@ -206,6 +206,7 @@ class PythonParser:
                     # is added to the parent which is a File, Class or Function
                     node_parent.sc.sd.append(section)
                 section.parameters[name] = SBParameter(node_current.padding, name)
+                # TODO add an empty description?
 
 
     # TODO check if this is possible to put all this in the node classes.
@@ -219,6 +220,7 @@ class PythonParser:
                 if node.to_explore:
                     stack.append(node)
                 else:
+                    # All non-explorable node (mostly CodeNodes)
                     node_class = node.find_parent_class()# if node != None else None
 
                     # Instance variables
@@ -241,12 +243,13 @@ class PythonParser:
                                          'Exceptions')
 
                     # Return
-                    
+                   
+            # Function prototypes
             if isinstance(node_parent, FunctionNode):
                 section = SBSectionParameter(node_parent.padding, 'Parameters')
+                node_parent.sc.sd.append(section)
                 parameters = re.split('[^\w=]+', node_parent.definition)
                 for parameter in parameters:
                     if parameter and parameter != 'self':
                         name = re.split('[=]+', parameter)[0]
                         section.parameters[name] = SBParameter(node.padding, name)
-                node_parent.sc.sd.append(section)
