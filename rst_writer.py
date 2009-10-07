@@ -24,27 +24,9 @@ __docformat__ = "restructuredtext en"
 
 import re
 import doc
+import python_pattern
 
 #from doc import SBSection
-
-
-pattern_indent = re.compile(
-    r"""
-    (?P<indent>[\s]*)
-    .*?
-    """, re.VERBOSE | re.DOTALL)
-
-
-pattern_section = re.compile(
-    r"""
-    (?P<indent>[\s]*)
-    [:]
-    (?P<title>[\w]*)
-    ([\s]*(?P<option>[\w]*))?
-    [:]
-    .*?
-    """, re.VERBOSE | re.DOTALL)
-
 
 
 

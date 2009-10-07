@@ -24,6 +24,7 @@ import io
 import re
 
 import doc
+import python_pattern
 
 from doc import *
 from node import *
@@ -59,60 +60,6 @@ class PythonParser:
         dfjadf afdj adfj af adj 
 
     """
-    pattern_indent = re.compile(
-        r"""
-        (?P<indent>[\s]*)
-        .*?
-        """, re.VERBOSE | re.DOTALL)
-
-
-    pattern_class = re.compile(
-        r"""
-        (?P<indent>[\s]*?)
-        class[\s]*?
-        (?P<name>[_\w]*?)
-            (\(
-            (?P<definition>[\s\,\w\=]*)
-            \))?
-        [\s]*?[:][\s]*?
-        """, re.VERBOSE | re.DOTALL)
-
-
-    pattern_function = re.compile(
-        r"""
-        (?P<indent>[\s]*?)
-        def[\s]*?
-        (?P<name>[_\w]*?)
-            \(
-            (?P<definition>[\s\,\w\=]*)
-            \)
-        [\s]*?[:][\s]*?
-        """, re.VERBOSE | re.DOTALL)
-
-
-    pattern_assignment = re.compile(
-        r"""
-        (?P<indent>[\s]*?)
-        (?P<name>[_\w]*?)
-        [\s]*?[=][\s]*.*?
-        """, re.VERBOSE | re.DOTALL)
-
-
-    pattern_self = re.compile(
-        r"""
-        (?P<indent>[\s]*?)
-        (self[.])
-        (?P<name>[_\w]*?)
-        [\s]*?[=][\s]*.*?
-        """, re.VERBOSE | re.DOTALL)
-
-
-    pattern_exception = re.compile(
-        r"""
-        (?P<indent>[\s]*)
-        raise[\s]*
-        (?P<name>[\w]*)
-        """, re.VERBOSE | re.DOTALL)
 
 
     def __init__(self):
@@ -144,7 +91,7 @@ class PythonParser:
                 continue  
 
             if self.nodes[-1].indent_children == None and line.strip() != '':
-                indent = self.pattern_indent.match(line).group('indent')
+                indent = python_pattern.indent.match(line).group('indent')
                 self.nodes[-1].indent_children = len(indent)
                 self.nodes[-1].compute_padding()
 
@@ -158,11 +105,11 @@ class PythonParser:
 
             node = None
             match = None
-            if self.pattern_class.match(line):
-                match = self.pattern_class.match(line)
+            if python_pattern.class_.match(line):
+                match = python_pattern.class_.match(line)
                 node = ClassNode()
-            elif self.pattern_function.match(line):
-                match = self.pattern_function.match(line)
+            elif python_pattern.function.match(line):
+                match = python_pattern.function.match(line)
                 node = FunctionNode()
 
             if node:
@@ -197,16 +144,27 @@ class PythonParser:
     def _handle_section(self, pattern, node_current, node_parent, title):
         match = pattern.match(node_current.content)
         if match:
-            name = match.group('name')
-            if name:
+            try:
+                # Parameters
+                print 'handle_section param:', title
+                name = match.group('name')
                 section = node_parent.sc.find_section(title)
                 if not section:
                     section = SBSectionParameter(node_parent.padding, title)
                     # the current class is obviously a CodeNode, so the section
                     # is added to the parent which is a File, Class or Function
                     node_parent.sc.sd.append(section)
-                section.parameters[name] = SBParameter(node_current.padding, name)
+                section.parameters[name] = SBParameter(node_parent.padding, name)
                 # TODO add an empty description?
+            except:
+                # Description
+                print 'handle_section desc:', title
+                # Note: this code comes rom rst_reader.py/_add_description
+                section = SBSectionDescription(node_parent.padding, title)
+                description = SBText(node_parent.padding, '')
+                section.sd.append(description)
+                node_parent.sc.sd.append(section)
+
 
 
     # TODO check if this is possible to put all this in the node classes.
@@ -224,25 +182,29 @@ class PythonParser:
                     node_class = node.find_parent_class()# if node != None else None
 
                     # Instance variables
-                    self._handle_section(self.pattern_self,
+                    self._handle_section(python_pattern.self,
                                          node,
                                          node_class,
                                          'IVariables')
 
                     # Class variables
                     if isinstance(node_parent, ClassNode):
-                        self._handle_section(self.pattern_assignment,
+                        self._handle_section(python_pattern.assignment,
                                              node,
                                              node_class,
                                              'CVariables')
 
                     # Exceptions
-                    self._handle_section(self.pattern_exception,
+                    self._handle_section(python_pattern.exception,
                                          node,
                                          node_parent,
                                          'Exceptions')
 
                     # Return
+                    self._handle_section(python_pattern.return_,
+                                         node,
+                                         node_parent,
+                                         'Return')
                    
             # Function prototypes
             if isinstance(node_parent, FunctionNode):

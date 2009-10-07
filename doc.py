@@ -101,6 +101,7 @@ class SBSectionParameter(SBSection):
         return self.writer.make_docstring_parameters_sb(self)
 
     def swallow(self, sb):
+        print '=== swallow parameter:', self.sd, sb.sd
         self.parameters.update(sb.parameters) 
 
 
@@ -110,11 +111,13 @@ class SBSectionDescription(SBSection):
         SBSection.__init__(self, padding, name, option)
 
     def make_docstring(self):
-        return self.writer.make_docstring_description_sb(self)
+        return self.writer.make_docstring_description_sb(self) + '\n'
 
     def swallow(self, sb):
         # TODO am i sure about that?
+        print '=== swallow description:', self.sd, sb.sd
         self.sd = sb.sd
+        print '=== swallow description after:', self.sd, sb.sd
          
 
 
