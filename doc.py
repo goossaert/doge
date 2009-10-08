@@ -111,7 +111,7 @@ class SBSectionDescription(SBSection):
         SBSection.__init__(self, padding, name, option)
 
     def make_docstring(self):
-        return self.writer.make_docstring_description_sb(self) + '\n'
+        return self.writer.make_docstring_description_sb(self)# + '\n'
 
     def swallow(self, sb):
         # TODO am i sure about that?

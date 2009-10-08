@@ -43,7 +43,8 @@ class RestructuredTextReader:
             # replace new lines by empty lines
             text = [strip_newline(line) for line in text if line]
             # replace empty line sequences by only one new line
-            text = [line for id, line in enumerate(text) if line and not id or text[id] or text[id - 1]]
+            #text = [line for id, line in enumerate(text) if line and not id or text[id] or text[id - 1]]
+            text = self._strip_last_empty_lines(text)
             # text is a list, so why do i have to do that? 
             parameter.sd[0].text = text
 
@@ -176,16 +177,23 @@ class RestructuredTextReader:
     def _strip_lines(self, lines):
         return [line.strip() for line in lines]
 
+    def _strip_last_empty_lines(self, lines):
+        while lines and not lines[-1].strip():
+            lines = lines[:-1]
+        return lines
 
     def _strip_first_empty_lines(self, lines):
         # skip the empty lines at the beginning of the docstring
-        id_start = None
-        for id_line, line in enumerate(lines):
-            if not line.strip():
-                id_start = id_line + 1
-            else:
-                break
-        return lines[id_start:]
+        while lines and not lines[0].strip():
+            lines = lines[1:]
+        return lines
+        #id_start = None
+        #for id_line, line in enumerate(lines):
+        #    if not line.strip():
+        #        id_start = id_line + 1
+        #    else:
+        #        break
+        #return lines[id_start:]
 
 
     # TODO from python_lang.py; delete?

@@ -65,7 +65,7 @@ class RestructuredTextWriter:
                 if name_section and name_section == name:
                     docstring.append(section.make_docstring())
 
-        return '\n'.join(docstring)
+        return 'LL\n'.join(docstring)
 
 
     def make_docstring_not_list(self, sb, list):
@@ -77,9 +77,7 @@ class RestructuredTextWriter:
                 #docstring.append(section.make_docstring(name_section))
                 docstring.append(section.make_docstring())
 
-        print '____ not list', docstring
-                   
-        return '\n'.join(docstring)
+        return 'NN\n'.join(docstring)
 
 
     def make_docstring_file(self, sb):
@@ -88,9 +86,7 @@ class RestructuredTextWriter:
 
         priority = self.make_docstring_list(sb, list)
         non_priority = self.make_docstring_not_list(sb, list)
-        #print 'make', priority, non_priority
 
-        #return priority
         return priority + non_priority
 
 
@@ -99,22 +95,20 @@ class RestructuredTextWriter:
 
         priority = self.make_docstring_list(sb, list)
         non_priority = self.make_docstring_not_list(sb, list)
-        #print 'make', priority, non_priority
 
-
-        #return priority
         return priority + non_priority
 
 
     def make_docstring_function(self, sb):
-        list = ['*Short', '*Long', 'Parameters', 'Exceptions']
+        list_start = ['*Short', '*Long', 'Parameters', 'Exceptions']
+        list_end = ['Return', 'ReturnType']
 
-        priority = self.make_docstring_list(sb, list)
-        non_priority = self.make_docstring_not_list(sb, list)
+        ds_start = self.make_docstring_list(sb, list_start)
+        ds_middle = self.make_docstring_not_list(sb, list_start + list_end)
+        ds_end = self.make_docstring_list(sb, list_end)
         #print 'make', priority, non_priority
 
-        #return priority
-        return priority + non_priority
+        return ds_start + '/' + ds_middle + '\\' + ds_end
 
 
     def _cut_line(self, line, len_editable):
@@ -162,7 +156,9 @@ class RestructuredTextWriter:
 
 
     def make_docstring_text_sb(self, section, level_indent):
-        return '\n'.join(section.padding.padding(level_indent) + line for line in section.text)
+        newline = ['\n'] if section.text and not section.text[-1].endswith('\n') else ['']
+        #newline = []
+        return '\n'.join(section.padding.padding(level_indent) + line for line in section.text + newline)
 
 
     def make_docstring_description_sb(self, sb):
@@ -173,17 +169,20 @@ class RestructuredTextWriter:
     
     def make_docstring_parameters_sb(self, sb):
         doc_parameter = '%s\n\
-                         %s\n'.replace(' ','')
+                         %s'.replace(' ','')
+                         #%s--\n'.replace(' ','')
         buffer = [sb.padding.padding(0) + ':' + sb.name + ':\n'] if sb.parameters else []
         for parameter in sb.parameters.values():
             name = parameter.name
             type = parameter.type
-
-            text = ''.join([self.make_docstring_text_sb(s, level_indent=1) for s in parameter.sd])
             doc_title = '%(indent)s%(name)s : %(type)s' if type else '%(indent)s%(name)s'
             title = doc_title % {'name': name, 'type': type, 'indent': sb.padding.padding(1)}
-            docstring = doc_parameter % (title, text)
+
+            text = ''.join([self.make_docstring_text_sb(s, level_indent=1) for s in parameter.sd])
+            newline = '\n\n' if not text else ''
+
+            docstring = doc_parameter % (title, text + newline)
             buffer.append(docstring)
-        return ''.join(buffer)
+        return ''.join(buffer)# + '--\n'
 
         #return [doc_parameter % (indent_name, name, indent_description, ''.join(description)) for name, description in section.parameters.items()]
