@@ -43,24 +43,6 @@ class PythonLang:
 
 
 class PythonParser:
-    """
-    short description.
-
-    asdfadfadf asdf adf adf asdf af
-
-    :CVariables:
-        pattern_indent
-            stuff to read
-
-    :Raises ErrorString:
-        If not in the good list.
-
-    :Returns:
-
-        dfjadf afdj adfj af adj 
-
-    """
-
 
     def __init__(self):
         self.module = None
@@ -141,12 +123,12 @@ class PythonParser:
         self._print(self.node_file)
 
 
-    def _handle_section(self, pattern, node_current, node_parent, title):
+    def _handle_section_parameter(self, pattern, node_current, node_parent, title):
         match = pattern.match(node_current.content)
         if match:
-            try:
+            #try:
                 # Parameters
-                print 'handle_section param:', title
+                print 'handle_section param:', title, node_current.padding, node_parent.padding
                 name = match.group('name')
                 section = node_parent.sc.find_section(title)
                 if not section:
@@ -155,13 +137,19 @@ class PythonParser:
                     # is added to the parent which is a File, Class or Function
                     node_parent.sc.sd.append(section)
                 section.parameters[name] = SBParameter(node_parent.padding, name)
+                description = SBText(node_parent.padding)
+                section.parameters[name].sd.append(description)
                 # TODO add an empty description?
-            except:
+
+
+    def _handle_section_description(self, pattern, node_current, node_parent, title):
+        match = pattern.match(node_current.content)
+        if match:
                 # Description
-                print 'handle_section desc:', title
+                print 'handle_section desc:', title, node_current.padding, node_parent.padding
                 # Note: this code comes rom rst_reader.py/_add_description
                 section = SBSectionDescription(node_parent.padding, title)
-                description = SBText(node_parent.padding, '')
+                description = SBText(node_parent.padding, ['']) # [] used to be ''
                 section.sd.append(description)
                 node_parent.sc.sd.append(section)
 
@@ -182,31 +170,32 @@ class PythonParser:
                     node_class = node.find_parent_class()# if node != None else None
 
                     # Instance variables
-                    self._handle_section(python_pattern.self,
+                    self._handle_section_parameter(python_pattern.self,
                                          node,
                                          node_class,
                                          'IVariables')
 
                     # Class variables
                     if isinstance(node_parent, ClassNode):
-                        self._handle_section(python_pattern.assignment,
+                        self._handle_section_parameter(python_pattern.assignment,
                                              node,
                                              node_class,
                                              'CVariables')
 
                     # Exceptions
-                    self._handle_section(python_pattern.exception,
+                    self._handle_section_parameter(python_pattern.exception,
                                          node,
                                          node_parent,
                                          'Exceptions')
 
                     # Return
-                    self._handle_section(python_pattern.return_,
+                    self._handle_section_description(python_pattern.return_,
                                          node,
                                          node_parent,
                                          'Return')
                    
             # Function prototypes
+            # TODO: factorize with the code of self._handle_section
             if isinstance(node_parent, FunctionNode):
                 section = SBSectionParameter(node_parent.padding, 'Parameters')
                 node_parent.sc.sd.append(section)
@@ -215,3 +204,5 @@ class PythonParser:
                     if parameter and parameter != 'self':
                         name = re.split('[=]+', parameter)[0]
                         section.parameters[name] = SBParameter(node.padding, name)
+                        #description = SBText(node.padding)
+                        #section.parameters[name].sd.append(description)

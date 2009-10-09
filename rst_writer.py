@@ -65,7 +65,7 @@ class RestructuredTextWriter:
                 if name_section and name_section == name:
                     docstring.append(section.make_docstring())
 
-        return 'LL\n'.join(docstring)
+        return '\n'.join(docstring)
 
 
     def make_docstring_not_list(self, sb, list):
@@ -77,38 +77,36 @@ class RestructuredTextWriter:
                 #docstring.append(section.make_docstring(name_section))
                 docstring.append(section.make_docstring())
 
-        return 'NN\n'.join(docstring)
+        return '\n'.join(docstring)
+
+
+    def make_docstring_sorted(self, sb, sections_start=[], sections_end=[]):
+        ds_start = self.make_docstring_list(sb, sections_start)
+        ds_middle = self.make_docstring_not_list(sb, sections_start + sections_end)
+        ds_end = self.make_docstring_list(sb, sections_end)
+        #print 'make', priority, non_priority
+
+        newline_start = '\n' if ds_start and ds_middle else ''
+        newline_middle = '\n' if ds_end and (ds_start or ds_middle) else ''
+
+        return ds_start + newline_start + ds_middle + newline_middle + ds_end
 
 
     def make_docstring_file(self, sb):
         # TODO make sure the parameters are detected, or fix the code that handles parent/class nodes.
         list = ['*Short', '*Long', 'Parameters']
-
-        priority = self.make_docstring_list(sb, list)
-        non_priority = self.make_docstring_not_list(sb, list)
-
-        return priority + non_priority
+        return self.make_docstring_sorted(sb, list)
 
 
     def make_docstring_class(self, sb):
         list = ['*Short', '*Long', 'IVariables', 'CVariables']
-
-        priority = self.make_docstring_list(sb, list)
-        non_priority = self.make_docstring_not_list(sb, list)
-
-        return priority + non_priority
+        return self.make_docstring_sorted(sb, list)
 
 
     def make_docstring_function(self, sb):
-        list_start = ['*Short', '*Long', 'Parameters', 'Exceptions']
-        list_end = ['Return', 'ReturnType']
-
-        ds_start = self.make_docstring_list(sb, list_start)
-        ds_middle = self.make_docstring_not_list(sb, list_start + list_end)
-        ds_end = self.make_docstring_list(sb, list_end)
-        #print 'make', priority, non_priority
-
-        return ds_start + '/' + ds_middle + '\\' + ds_end
+        sections_start = ['*Short', '*Long', 'Parameters', 'Exceptions']
+        sections_end = ['Return', 'ReturnType']
+        return self.make_docstring_sorted(sb, sections_start, sections_end)
 
 
     def _cut_line(self, line, len_editable):
@@ -156,9 +154,11 @@ class RestructuredTextWriter:
 
 
     def make_docstring_text_sb(self, section, level_indent):
-        newline = ['\n'] if section.text and not section.text[-1].endswith('\n') else ['']
-        #newline = []
-        return '\n'.join(section.padding.padding(level_indent) + line for line in section.text + newline)
+        newline = '\n' if not section.text or not section.text[-1].endswith('\n') else ''
+        print 'nl', newline, section.text
+        if section.text == None:
+            section.text = []
+        return '\n'.join(section.padding.padding(level_indent) + line for line in section.text) + newline
 
 
     def make_docstring_description_sb(self, sb):
@@ -179,7 +179,10 @@ class RestructuredTextWriter:
             title = doc_title % {'name': name, 'type': type, 'indent': sb.padding.padding(1)}
 
             text = ''.join([self.make_docstring_text_sb(s, level_indent=1) for s in parameter.sd])
-            newline = '\n\n' if not text else ''
+            #newline = '\n' if not text or (text and text[-1] != '\n') else ''
+            #newline = '\n' if not text else ''
+            newline = ''
+            print 'make_ds_param_sb', title, '"', text, '"'
 
             docstring = doc_parameter % (title, text + newline)
             buffer.append(docstring)

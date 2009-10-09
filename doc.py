@@ -71,7 +71,7 @@ class SBParameter(SB):
 
 
 class SBText(SB):
-    def __init__(self, padding=None, text=[]):
+    def __init__(self, padding=None, text=['']): # used to be []
         SB.__init__(self, padding)
         self.text = text
 

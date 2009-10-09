@@ -36,23 +36,39 @@ class RestructuredTextReader:
 
 
     def _cleanup_parameters(self, parameters):
-        strip_newline = lambda string: '' if string == '\n' else string
-
         for name, parameter in parameters.items():
-            text = parameter.sd[0].text
-            # replace new lines by empty lines
-            text = [strip_newline(line) for line in text if line]
-            # replace empty line sequences by only one new line
-            #text = [line for id, line in enumerate(text) if line and not id or text[id] or text[id - 1]]
-            text = self._strip_last_empty_lines(text)
-            # text is a list, so why do i have to do that? 
-            parameter.sd[0].text = text
+            parameter.sd[0].text = self._cleanup_text(parameter.sd[0].text)
+
+    def _cleanup_text(self, text):
+        strip_newline = lambda string: '' if string == '\n' else string
+        #text = parameter.sd[0].text
+        # replace new lines by empty lines
+        print 'cleanup before:', text
+        text = self._strip_first_empty_lines(text)
+        text = [strip_newline(line) for line in text] # used to have a test: if line
+        # replace empty line sequences by only one new line
+        #text = [line for id, line in enumerate(text) if line and not id or text[id] or text[id - 1]]
+        text = self._strip_last_empty_lines(text)
+        # text is a list, so why do i have to do that? 
+        #parameter.sd[0].text = text
+        print 'cleanup after:', text
+
+        return text
 
 
     def _cleanup_section(self, node, name):
         section = node.sf.find_section(name)
         if section:
               self._cleanup_parameters(section.parameters)
+
+    def _cleanup_sections(self, node):
+        for section in node.sf.sd:
+            if isinstance(section, SBSectionParameter):
+                self._cleanup_parameters(section.parameters) 
+            elif isinstance(section, SBSectionDescription):
+                section.sd[0].text = self._cleanup_text(section.sd[0].text) 
+
+            
 
 
     #def _fill_descriptions(self, node, descriptions):
@@ -69,21 +85,25 @@ class RestructuredTextReader:
     #            self._cleanup_parameters(types)
 
 
+
     def parse_docstring_file(self, node):
         self.parse_docstring(node)
-        self._cleanup_section(node, 'Parameters')
+        self._cleanup_sections(node)
+        #self._cleanup_section(node, 'Parameters')
 
 
     def parse_docstring_class(self, node):
         self.parse_docstring(node)
-        self._cleanup_section(node, 'CVariables')
-        self._cleanup_section(node, 'IVariables')
+        self._cleanup_sections(node)
+        #self._cleanup_section(node, 'CVariables')
+        #self._cleanup_section(node, 'IVariables')
 
 
     def parse_docstring_function(self, node):
         self.parse_docstring(node)
-        self._cleanup_section(node, 'Parameters')
-        self._cleanup_section(node, 'Exceptions')
+        self._cleanup_sections(node)
+        #self._cleanup_section(node, 'Parameters')
+        #self._cleanup_section(node, 'Exceptions')
 
 
     def _find_cut(self, docstring, fct_string):
@@ -100,7 +120,7 @@ class RestructuredTextReader:
         self._parse_docstring_descriptions(node, docstring[:id_cut])
         self._parse_docstring_sections(node, docstring[id_cut:])
 
-
+    # TODO: as we always add a text to the section description, this text should be added automatically when building the SBSectionDescription instance!
     def _add_description(self, name, node, text, options=None):
         section = SBSectionDescription(node.padding, name, options)
         description = SBText(node.padding, text)
@@ -117,6 +137,8 @@ class RestructuredTextReader:
         docstring = self._strip_lines(docstring)
         if docstring and not docstring[0].startswith('"""'):
             id_cut = self._find_cut(docstring, lambda s: not s.strip())
+            print 'Short:', docstring[:id_cut]
+            print 'Long:', docstring[id_cut+1:]
             self._add_description('*Short', node, docstring[:id_cut])
             self._add_description('*Long', node, docstring[id_cut+1:])
 
@@ -131,7 +153,7 @@ class RestructuredTextReader:
         options_previous = None
         section_current = None
         section_previous = None
-        sections_text = ['Return', 'Raises']
+        #sections_text = ['Return', 'Raises']
         sections_parameter = ['IVariables', 'CVariables', 'Variables', 'Parameters', 'Exceptions']
         in_description_short = True
         in_description_long = False
@@ -196,7 +218,7 @@ class RestructuredTextReader:
         #return lines[id_start:]
 
 
-    # TODO from python_lang.py; delete?
+    # TODO from python_lang.py: delete?
     def _handle_single_parameter(self, name, options, node, title, docstring):
         if not name:
             return
@@ -466,7 +488,7 @@ class RestructuredTextReader:
                 print 'diff', diff
                 space = ' ' * diff if diff > 0 else ''
                 buffer.append(space + line.strip())
-                buffer.append('')
+                #buffer.append('')
 
         return buffer
 
