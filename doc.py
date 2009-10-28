@@ -43,12 +43,12 @@ class SB:
         return None
 
 
-    def swallow(self, sb):
+    def swallow(self, sb, sb_parent=None):
         for section_out in sb.sd:
             if isinstance(section_out, SBSection):
                 section_in = self.find_section(section_out.name)
                 if section_in:
-                    section_in.swallow(section_out)
+                    section_in.swallow(section_out, sb)
                 else:
                     #print 'add:', section_out.name
                     self.sd.append(section_out)
@@ -64,7 +64,7 @@ class SBParameter(SB):
         self.name = name
         self.type = type
 
-    def swallow(self, sb):
+    def swallow(self, sb, sb_parent=None):
         self.name = sb.name
         self.type = sb.type
 
@@ -78,7 +78,7 @@ class SBText(SB):
     def make_docstring(self):
         return self.writer.make_docstring_text_sb(self)
 
-    def swallow(self, sb):
+    def swallow(self, sb, sb_parent=None):
         self.text = sb.text
 
 
@@ -100,10 +100,18 @@ class SBSectionParameter(SBSection):
         #print 'SBSectionParameter'
         return self.writer.make_docstring_parameters_sb(self)
 
-    def swallow(self, sb):
+    def swallow(self, sb, sb_parent=None):
         print '=== swallow parameter:', self.sd, sb.sd
         self.parameters.update(sb.parameters) 
 
+        section_types = sb_parent.find_section("Types")
+        if section_types:
+            self.swallow_types(section_types)
+
+    def swallow_types(self, section_types):
+        for name, parameter in section_types.parameters.items():
+            if name in self.parameters:
+                self.parameters[name].type = parameter.sd[0].text[0].strip()
 
 
 class SBSectionDescription(SBSection):
@@ -113,7 +121,7 @@ class SBSectionDescription(SBSection):
     def make_docstring(self):
         return self.writer.make_docstring_description_sb(self)# + '\n'
 
-    def swallow(self, sb):
+    def swallow(self, sb, sb_parent=None):
         # TODO am i sure about that?
         print '=== swallow description:', self.sd, sb.sd
         self.sd = sb.sd

@@ -80,9 +80,9 @@ class RestructuredTextWriter:
         return '\n'.join(docstring)
 
 
-    def make_docstring_sorted(self, sb, sections_start=[], sections_end=[]):
+    def make_docstring_sorted(self, sb, sections_start=[], sections_end=[], sections_exclude=[]):
         ds_start = self.make_docstring_list(sb, sections_start)
-        ds_middle = self.make_docstring_not_list(sb, sections_start + sections_end)
+        ds_middle = self.make_docstring_not_list(sb, sections_start + sections_end + sections_exclude)
         ds_end = self.make_docstring_list(sb, sections_end)
         #print 'make', priority, non_priority
 
@@ -94,19 +94,22 @@ class RestructuredTextWriter:
 
     def make_docstring_file(self, sb):
         # TODO make sure the parameters are detected, or fix the code that handles parent/class nodes.
-        list = ['*Short', '*Long', 'Parameters']
-        return self.make_docstring_sorted(sb, list)
+        sections_start = ['*Short', '*Long', 'Parameters']
+        sections_exclude = ['Types']
+        return self.make_docstring_sorted(sb, sections_start, [], sections_exclude)
 
 
     def make_docstring_class(self, sb):
-        list = ['*Short', '*Long', 'IVariables', 'CVariables']
-        return self.make_docstring_sorted(sb, list)
+        sections_start = ['*Short', '*Long', 'IVariables', 'CVariables']
+        sections_exclude = ['Types']
+        return self.make_docstring_sorted(sb, sections_start, [], sections_exclude)
 
 
     def make_docstring_function(self, sb):
         sections_start = ['*Short', '*Long', 'Parameters', 'Exceptions']
         sections_end = ['Return', 'ReturnType']
-        return self.make_docstring_sorted(sb, sections_start, sections_end)
+        sections_exclude = ['Types']
+        return self.make_docstring_sorted(sb, sections_start, sections_end, sections_exclude)
 
 
     def _cut_line(self, line, len_editable):
