@@ -23,9 +23,10 @@ __docformat__ = "restructuredtext en"
 import os
 import sys
 import logging
-import ut
 from optparse import OptionParser
 
+import ut
+import fs
 import markup
 from python_lang import PythonParser
 from python_lang import PythonLang
@@ -72,57 +73,26 @@ def check_options(options):
         logger.critical('Configuration file "%s" cannot be found.' % options.path_file_config)
         exit()
 
-# TODO from gage, code for files and directories
-def fill_directories(directories, recursive=False):
-    #self.path_directory_output = None
-    #paths_directory_input = []
-    #for rule_directory in self.rule_set.get_rules_by_type('RuleDirectoryPermission'):
-    #    if rule_directory.action == 'input':
-    #        paths_directory_input.append(os.path.join(name_directory_base, rule_directory.name_directory))
-        #elif not self.path_directory_output: # action == 'output'
-        #    pass
-
-    #if not self.path_directory_output:
-    #    self.path_directory_output = self.path_directory_output_default
-    #    logger.warning('No output directory given, using default: "%s"' % self.path_directory_output)
-
-    directories_output = []
-
-    while directories:
-        directory = directories.pop()
-        if os.path.exists(directory):
-            # Save the popped directory
-            directories_output.append(directory)
-            logger.info('Handling directory: "%s"' % directory)
-            if recursive:
-                print ['dir: ' + '|' + directory + '|' + f + '|' + os.path.join(directory, f) for f in os.listdir(directory)]
-                inodes_all = [os.path.join(directory, f) for f in os.listdir(directory)]
-                directories_all = [d for d in files_sub if os.path.isdir(d)]
-                # Add the new directories for the current loop,
-                directories.extend(directories_all)
-        else:
-            logger.error('Error path: the directory "%s" does not exists!' % path_directory)
-
-    print directories_output
-    return directories_output
 
 
-def fill_files(self, directories, extentions):
-    files_output = []
+def handle_files(parser, files):
+    writer = Writer()
+    for file in files:
+        print '--------', file, '--------'
+        parser.read_file(file)
+        parser.print_file()
+        parser.build_structure()
+        pass
+        writer.write(parser.node_file)
+        pass
+        print ''.join(writer.buffer)
 
-    for directory in directories:
-        inodes_all = [os.path.join(directory, f) for f in os.listdir(directory)]
-        files_all = [f for f in files_sub if os.path.isfile(f) and os.path.splitext(f)[1] in extensions]
-        files_output.extend(files_all)
-
-    for file in files_output:
-        logger.info('Handling file: "%s"' % file)
 
 
 
 if __name__ == '__main__':
-    programname = 'doge 0.1'
-    optionparser = OptionParser(version=programname)
+    version = 'doge 0.1'
+    optionparser = OptionParser(version=version)
     set_option_parser(optionparser)
     (options, args) = optionparser.parse_args()
 
@@ -140,13 +110,7 @@ if __name__ == '__main__':
     Node.reader = markup_input.reader
     Node.lang = markup_input.lang
 
-    parser = PythonParser()
-    parser.read_file('truc.py')
-    parser.print_file()
-    parser.build_structure()
-    pass
-    writer = Writer()
-    writer.write(parser.node_file)
-    pass
-    print ''.join(writer.buffer)
-    fill_directories(['/home/ron/code/python/'], recursive=True)
+    directories = fs.get_directories(['/home/ron/code/python/pydoge'], recursive=False)
+    files = fs.get_files(directories, markup_input.extensions)
+
+    handle_files(markup_input.parser, files)

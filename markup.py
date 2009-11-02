@@ -1,5 +1,5 @@
 """
-Markup objects.
+Markup system.
 """
 __docformat__ = "restructuredtext en" 
 
@@ -58,7 +58,7 @@ class RSTPythonMarkup:
 
     name = 'rst'
     language = 'python'
-    files = ['py']
+    extensions = ['.py']
 
     parser = PythonParser()
     lang = PythonLang()
