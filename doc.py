@@ -50,11 +50,10 @@ class SB:
                 if section_in:
                     section_in.swallow(section_out, sb)
                 else:
-                    #print 'add:', section_out.name
                     self.sd.append(section_out)
 
     def make_docstring(self):
-        print '+++++empty'
+        print ''
 
             
 
@@ -97,14 +96,12 @@ class SBSectionParameter(SBSection):
         self.parameters = {}
 
     def make_docstring(self):
-        #print 'SBSectionParameter'
         return self.writer.make_docstring_parameters_sb(self)
 
     def swallow(self, sb, sb_parent=None):
-        print '=== swallow parameter:', self.sd, sb.sd
         self.parameters.update(sb.parameters) 
 
-        section_types = sb_parent.find_section("Types")
+        section_types = sb_parent.find_section('Types')
         if section_types:
             self.swallow_types(section_types)
 
@@ -123,9 +120,7 @@ class SBSectionDescription(SBSection):
 
     def swallow(self, sb, sb_parent=None):
         # TODO am i sure about that?
-        print '=== swallow description:', self.sd, sb.sd
         self.sd = sb.sd
-        print '=== swallow description after:', self.sd, sb.sd
          
 
 

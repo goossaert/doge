@@ -43,7 +43,6 @@ class RestructuredTextReader:
         strip_newline = lambda string: '' if string == '\n' else string
         #text = parameter.sd[0].text
         # replace new lines by empty lines
-        print 'cleanup before:', text
         text = self._strip_first_empty_lines(text)
         text = [strip_newline(line) for line in text] # used to have a test: if line
         # replace empty line sequences by only one new line
@@ -51,7 +50,6 @@ class RestructuredTextReader:
         text = self._strip_last_empty_lines(text)
         # text is a list, so why do i have to do that? 
         #parameter.sd[0].text = text
-        print 'cleanup after:', text
 
         return text
 
@@ -142,8 +140,6 @@ class RestructuredTextReader:
         docstring = self._strip_lines(docstring)
         if docstring and not docstring[0].startswith('"""'):
             id_cut = self._find_cut(docstring, lambda s: not s.strip())
-            print 'Short:', docstring[:id_cut]
-            print 'Long:', docstring[id_cut+1:]
             self._add_description('*Short', node, docstring[:id_cut])
             self._add_description('*Long', node, docstring[id_cut+1:])
 
@@ -173,9 +169,6 @@ class RestructuredTextReader:
                     # already in a section, hence we have to treat it before
                     # setting up the new one
                     #sb_section = SBSection(node.padding, section_current, option_current)
-                    print 'cur:', line_current
-                    print 'prev:', line_previous
-                    print '---'
                     if line_previous.strip().startswith('@'):
                         parser = self.parse_section_single
                     elif section_previous in sections_parameter: 
@@ -193,7 +186,6 @@ class RestructuredTextReader:
                 if match:
                     section_current = match.group('title')
                     options_current = [match.group('option'), match.group('content')]
-                    print 'options_current', options_current
                 id_section = id_line
 
                 line_previous = line_current
@@ -252,7 +244,6 @@ class RestructuredTextReader:
 
     def _handle_single_description(self, name, options, node, title, docstring):
         self._add_description(title, node, [options[1]] + docstring)
-        print '++++++++ handle description'
         return
 
         indent_diff = node.indent_children - node.indent
@@ -273,7 +264,6 @@ class RestructuredTextReader:
         #indent_diff = node.indent_children - node.indent
         #indent_base = len(python_pattern.indent.match(docstring[0]).group('indent'))# + indent_diff
         #padding = Padding(indent_base, indent_diff)
-        print 'parse_section_single', name
 
         # get the description text, and then decide on what to do based on the name.
 
@@ -361,18 +351,15 @@ class RestructuredTextReader:
         if options[0]:
             # it has a argument, so it is a parameter
             if name in parameters:
-                print '-- option parameters', len(options), options, name
                 #section = node.sf.find_section(parameters[name])
                 #print 'title', title
                 self._handle_single_parameter(name, options, node, parameters[name], docstring)
         elif name in descriptions:
-            print '-- option descriptions', len(options), options, name
             self._handle_single_description(name, options, node, descriptions[name], docstring)
 
 
     # TODO this function is never executed?
     def parse_section_text(self, name, options,  node, docstring):
-        print 'parse_section_text', name, options, node, docstring
         #docstring = docstring[1:]
         #docstring = self._strip_lines(docstring)
 
@@ -381,11 +368,9 @@ class RestructuredTextReader:
         #indent_description = indent_base + indent_diff
         indent_description = len(python_pattern.indent.match(docstring[0]).group('indent'))
         padding = Padding(indent_base, indent_diff)
-        print 'parse_section_text:', name, node.padding.base, node.padding.diff
         buffer = ['']
         for line in docstring:
             indent_current = len(python_pattern.indent.match(line).group('indent'))
-            print 'current', 'description', line, indent_current, indent_description
             if indent_current >= indent_description:
                 buffer = self._handle_description(indent_current,
                                                   indent_description,
@@ -398,7 +383,6 @@ class RestructuredTextReader:
         #print 'parse_section_text:', name, padding.base, padding.diff
         #section.sd.append(description)
         #node.sf.sd.append(section)
-        print 'buffer', buffer
         self._add_description(name, node, buffer, padding, options)
 
 
@@ -418,8 +402,6 @@ class RestructuredTextReader:
         padding = Padding(indent_base, indent_diff)
 
         section = SBSectionParameter(padding, name)
-        print 'parse_section_parameter', name, padding.base, padding.diff, 'i para', indent_parameter
-        print 'docstring', docstring
         node.sf.sd.append(section)
 
         parameter = None
@@ -484,7 +466,6 @@ class RestructuredTextReader:
 
         for line in lines:
             indent_current = len(python_pattern.indent.match(line).group('indent'))
-            print 'current', indent_current, 'obj', indent_objective, 'buffer', buffer
             #if indent_current == indent_objective:
                 # regular description line, so just add the content
             #    space = ' ' if buffer[-1] else ''
@@ -493,7 +474,6 @@ class RestructuredTextReader:
             if True:
                 # not a regular description line, so put in its own string
                 diff = indent_current - indent_objective
-                print 'diff', diff
                 space = ' ' * diff if diff >= 0 else ''
                 buffer.append(space + line.strip())
                 #buffer.append('')

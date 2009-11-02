@@ -128,7 +128,6 @@ class PythonParser:
         if match:
             #try:
                 # Parameters
-                print 'handle_section param:', title, node_current.padding, node_parent.padding
                 name = match.group('name')
                 section = node_parent.sc.find_section(title)
                 if not section:
@@ -146,7 +145,6 @@ class PythonParser:
         match = pattern.match(node_current.content)
         if match:
                 # Description
-                print 'handle_section desc:', title, node_current.padding, node_parent.padding
                 # Note: this code comes rom rst_reader.py/_add_description
                 section = SBSectionDescription(node_parent.padding, title)
                 description = SBText(node_parent.padding, ['']) # [] used to be ''

@@ -21,14 +21,12 @@ __docformat__ = "restructuredtext en"
 ## along with pydoge.  If not, see <http://www.gnu.org/licenses/>.
 
 from node import *
-from rst_writer import RestructuredTextWriter
 
 class Writer:
 
     buffer = []
     
     def __init__(self):
-        self.rst = RestructuredTextWriter()
         pass
 
     # TODO check if this is possible to put all this in the node classes.

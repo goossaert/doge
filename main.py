@@ -23,8 +23,10 @@ __docformat__ = "restructuredtext en"
 import os
 import sys
 import logging
+import ut
 from optparse import OptionParser
 
+import markup
 from python_lang import PythonParser
 from python_lang import PythonLang
 from writer import Writer
@@ -54,9 +56,11 @@ def set_logger(options):
 
 
 def set_option_parser(parser):
-    path_file_config_default = 'rules.cfg'
-    parser.add_option('-c', '--config', action='store', type='string', dest='path_file_config', default=path_file_config_default, help='Configuration file, where the rules will be read')
-    path_directory_output_default = 'gateway'
+    path_directory_output_default = 'documented'
+    parser.add_option('-m', '--input-markup', action='store', type='string', dest='markup_input', help='Input markup language, as it appears in the input source files')
+    parser.add_option('--output-markup', action='store', type='string', dest='markup_output', help='Output markup language, as it will appear in the output source files. If not specified, the input markup will be used.')
+    parser.add_option('-l', '--language', action='store', type='string', dest='language', help='Programming language of the source files')
+    parser.add_option('-f', '--filter', action='store', type='string', dest='filter', help='Filter to be applied on the input files')
     parser.add_option('-o', '--output', action='store', type='string', dest='path_directory_output', default=path_directory_output_default, help='Output directory, where the output files will be written')
     parser.add_option('-q', '--quiet', action='store_true', dest='quiet', default=False, help='show only critical messages')
     parser.add_option('-v', '--verbose', action='store_true', dest='verbose', default=False, help='show all messages')
@@ -68,60 +72,73 @@ def check_options(options):
         logger.critical('Configuration file "%s" cannot be found.' % options.path_file_config)
         exit()
 
-    # TODO from gage, code for files and directories
-    def fill_directories(self, name_directory_base):
-        #self.path_directory_output = None
-        paths_directory_input = []
-        for rule_directory in self.rule_set.get_rules_by_type('RuleDirectoryPermission'):
-            if rule_directory.action == 'input':
-                paths_directory_input.append(os.path.join(name_directory_base, rule_directory.name_directory))
-            #elif not self.path_directory_output: # action == 'output'
-            #    pass
+# TODO from gage, code for files and directories
+def fill_directories(directories, recursive=False):
+    #self.path_directory_output = None
+    #paths_directory_input = []
+    #for rule_directory in self.rule_set.get_rules_by_type('RuleDirectoryPermission'):
+    #    if rule_directory.action == 'input':
+    #        paths_directory_input.append(os.path.join(name_directory_base, rule_directory.name_directory))
+        #elif not self.path_directory_output: # action == 'output'
+        #    pass
 
-        paths_directory_input_loop = paths_directory_input if paths_directory_input else ['./']
+    #if not self.path_directory_output:
+    #    self.path_directory_output = self.path_directory_output_default
+    #    logger.warning('No output directory given, using default: "%s"' % self.path_directory_output)
 
-        #if not self.path_directory_output:
-        #    self.path_directory_output = self.path_directory_output_default
-        #    logger.warning('No output directory given, using default: "%s"' % self.path_directory_output)
+    directories_output = []
 
-        while paths_directory_input_loop:
-            path_directory = paths_directory_input_loop.pop()
-            if os.path.exists(path_directory):
-                paths_directory_sub = [os.path.join(path_directory, f) for f in os.listdir(path_directory) if os.path.isdir(os.path.join(path_directory, f))]
+    while directories:
+        directory = directories.pop()
+        if os.path.exists(directory):
+            # Save the popped directory
+            directories_output.append(directory)
+            logger.info('Handling directory: "%s"' % directory)
+            if recursive:
+                print ['dir: ' + '|' + directory + '|' + f + '|' + os.path.join(directory, f) for f in os.listdir(directory)]
+                inodes_all = [os.path.join(directory, f) for f in os.listdir(directory)]
+                directories_all = [d for d in files_sub if os.path.isdir(d)]
                 # Add the new directories for the current loop,
-                paths_directory_input_loop.extend(paths_directory_sub)
-                # Save the popped directory
-                self.paths_directory_input.append(path_directory)
-                logger.info('Handling directory: "%s"' % path_directory)
-                #self.paths_directory_input.extend(paths_directory_sub)
-            else:
-                logger.error('Error path: the directory "%s" does not exists!' % path_directory)
+                directories.extend(directories_all)
+        else:
+            logger.error('Error path: the directory "%s" does not exists!' % path_directory)
+
+    print directories_output
+    return directories_output
 
 
-    def fill_files(self):
-        for path_directory in self.paths_directory_input:
-            paths_files = [f for f in os.listdir(path_directory) if os.path.isfile(os.path.join(path_directory, f))]
-            paths_files_valid = [os.path.join(path_directory, f) for f in paths_files if self.rule_set.check_permission('RuleFilePermission', {'name_file': f})]
-            self.paths_file_input.extend(paths_files_valid)
+def fill_files(self, directories, extentions):
+    files_output = []
 
-        # Logs
-        for path in self.paths_file_input:
-            logger.info('Handling file: "%s"' % path)
+    for directory in directories:
+        inodes_all = [os.path.join(directory, f) for f in os.listdir(directory)]
+        files_all = [f for f in files_sub if os.path.isfile(f) and os.path.splitext(f)[1] in extensions]
+        files_output.extend(files_all)
 
+    for file in files_output:
+        logger.info('Handling file: "%s"' % file)
 
 
 
 if __name__ == '__main__':
-    optionparser = OptionParser(version="doge 0.1")
+    programname = 'doge 0.1'
+    optionparser = OptionParser(version=programname)
     set_option_parser(optionparser)
     (options, args) = optionparser.parse_args()
 
     set_logger(options)
     #check_options(options)
 
-    Node.writer = RestructuredTextWriter()
-    Node.reader = RestructuredTextReader()
-    Node.lang = PythonLang()
+    markup_input = markup.find_markup(options.markup_input, options.language)
+    markup_output = markup.find_markup(options.markup_output, options.language)
+
+    if not markup_output:
+        markup_output = markup_input
+
+    # TODO pass markup directly instead of assigning to Node
+    Node.writer = markup_output.writer
+    Node.reader = markup_input.reader
+    Node.lang = markup_input.lang
 
     parser = PythonParser()
     parser.read_file('truc.py')
@@ -132,3 +149,4 @@ if __name__ == '__main__':
     writer.write(parser.node_file)
     pass
     print ''.join(writer.buffer)
+    fill_directories(['/home/ron/code/python/'], recursive=True)

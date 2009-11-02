@@ -72,7 +72,6 @@ class RestructuredTextWriter:
         docstring = []
         for section in sb.sd:
             name_section = getattr(section, 'name', None)
-            print 'section', section
             if not name_section or name_section not in list:
                 #docstring.append(section.make_docstring(name_section))
                 docstring.append(section.make_docstring())
@@ -158,7 +157,6 @@ class RestructuredTextWriter:
 
     def make_docstring_text_sb(self, section, level_indent):
         newline = '\n' if not section.text or not section.text[-1].endswith('\n') else ''
-        print 'nl', newline, section.text
         if section.text == None:
             section.text = []
         return '\n'.join(section.padding.padding(level_indent) + line for line in section.text) + newline
@@ -185,7 +183,6 @@ class RestructuredTextWriter:
             #newline = '\n' if not text or (text and text[-1] != '\n') else ''
             #newline = '\n' if not text else ''
             newline = ''
-            print 'make_ds_param_sb', title, '"', text, '"'
 
             docstring = doc_parameter % (title, text + newline)
             buffer.append(docstring)
