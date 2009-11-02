@@ -50,7 +50,7 @@ def get_directories(directories, recursive=False):
             logger.info('Handling directory: "%s"' % directory)
             if recursive:
                 inodes_all = [os.path.join(directory, f) for f in os.listdir(directory)]
-                directories_all = [d for d in files_sub if os.path.isdir(d)]
+                directories_all = [d for d in inodes_all if os.path.isdir(d)]
                 # Add the new directories for the current loop,
                 directories.extend(directories_all)
         else:
@@ -70,6 +70,13 @@ def get_files(directories, extensions):
         logger.info('Handling file: "%s"' % file)
 
     return files_output
+
+
+def mkdir_hierarchy(files, mode='0644'):
+    directories_all = [os.path.dirname(file) for file in files]
+    directories = list(set(directories_all))
+    print directories
+    print sorted(directories)
 
 
 # TODO function to copy directory hierarchy

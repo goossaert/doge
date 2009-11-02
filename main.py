@@ -110,7 +110,9 @@ if __name__ == '__main__':
     Node.reader = markup_input.reader
     Node.lang = markup_input.lang
 
-    directories = fs.get_directories(['/home/ron/code/python/pydoge'], recursive=False)
+    directories = fs.get_directories(['/home/ron/code/python/'], recursive=True)
     files = fs.get_files(directories, markup_input.extensions)
 
-    handle_files(markup_input.parser, files)
+    #handle_files(markup_input.parser, files)
+
+    fs.mkdir_hierarchy(files)
