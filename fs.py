@@ -72,11 +72,25 @@ def get_files(directories, extensions):
     return files_output
 
 
-def mkdir_hierarchy(files, mode='0644'):
-    directories_all = [os.path.dirname(file) for file in files]
-    directories = list(set(directories_all))
-    print directories
-    print sorted(directories)
+# TODO add exception check in this function
+def copy_dir_hierarchy(files, dir_source, dir_dest, mode=0755):
+    # get all directory names from file paths
+    dirs_all = [os.path.dirname(file) for file in files]
+    # sort the paths and make sure they are unique
+    dirs_sorted = sorted(list(set(dirs_all)))
+    # delete directories that are part of other hierarchies
+    filter = lambda index: index == len(dirs_sorted) - 1 or not dirs_sorted[index + 1].startswith(dirs_sorted[index])
+    dirs_filtered = [dir for index, dir in enumerate(dirs_sorted) if filter(index)] 
+    # replace directory prefix
+    dirs = [os.path.join(dir_dest, d[len(dir_source):]) for d in dirs_filtered] 
+
+    for dir in dirs:
+        try:                os.makedirs(dir, mode)
+        except OSError, e:  pass 
+
+
+def transform_filepath(filepath, dir_source, dir_dest):
+    return os.path.join(dir_dest, filepath[len(dir_source):])
 
 
 # TODO function to copy directory hierarchy

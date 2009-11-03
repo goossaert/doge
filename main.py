@@ -57,15 +57,69 @@ def set_logger(options):
 
 
 def set_option_parser(parser):
-    path_directory_output_default = 'documented'
-    parser.add_option('-m', '--input-markup', action='store', type='string', dest='markup_input', help='Input markup language, as it appears in the input source files')
-    parser.add_option('--output-markup', action='store', type='string', dest='markup_output', help='Output markup language, as it will appear in the output source files. If not specified, the input markup will be used.')
-    parser.add_option('-l', '--language', action='store', type='string', dest='language', help='Programming language of the source files')
-    parser.add_option('-f', '--filter', action='store', type='string', dest='filter', help='Filter to be applied on the input files')
-    parser.add_option('-o', '--output', action='store', type='string', dest='path_directory_output', default=path_directory_output_default, help='Output directory, where the output files will be written')
-    parser.add_option('-q', '--quiet', action='store_true', dest='quiet', default=False, help='show only critical messages')
-    parser.add_option('-v', '--verbose', action='store_true', dest='verbose', default=False, help='show all messages')
-    parser.add_option('-d', '--debug', action='store_true', dest='debug', default=False, help='show ALL messages')
+    dir_default_input = './'
+    dir_default_output = 'pydoge'
+    parser.add_option('-m',
+                      '--input-markup',
+                      action='store',
+                      type='string',
+                      dest='markup_input',
+                      help='Input markup language, as it appears in the input source files')
+    parser.add_option('--output-markup',
+                      action='store',
+                      type='string',
+                      dest='markup_output',
+                      help='Output markup language, as it will appear in the output source files. If not specified, the input markup will be used.')
+    parser.add_option('-l',
+                      '--language',
+                      action='store',
+                      type='string',
+                      dest='language',
+                      help='Programming language of the source files')
+    parser.add_option('-f',
+                      '--filter',
+                      action='store',
+                      type='string',
+                      dest='filter',
+                      help='Filter to be applied on the input files')
+    parser.add_option('-i',
+                      '--input',
+                      action='store',
+                      type='string',
+                      dest='dir_input',
+                      default=dir_default_input,
+                      help='Input directory, where source files will be read from')
+    parser.add_option('-o',
+                      '--output',
+                      action='store',
+                      type='string',
+                      dest='dir_output',
+                      default=dir_default_output,
+                      help='Output directory, where the output files will be written')
+    parser.add_option('-r',
+                      '--recursive',
+                      action='store_true',
+                      dest='recursive',
+                      default=False,
+                      help='Treat the input directory recursively')
+    parser.add_option('-q',
+                      '--quiet',
+                      action='store_true',
+                      dest='quiet',
+                      default=False,
+                      help='show only critical messages')
+    parser.add_option('-v',
+                      '--verbose',
+                      action='store_true',
+                      dest='verbose',
+                      default=False,
+                      help='show all messages')
+    parser.add_option('-d',
+                      '--debug',
+                      action='store_true',
+                      dest='debug',
+                      default=False,
+                      help='show ALL messages')
 
 
 def check_options(options):
@@ -75,16 +129,19 @@ def check_options(options):
 
 
 
-def handle_files(parser, files):
-    writer = Writer()
+def handle_files(parser, files, dir_source, dir_dest):
     for file in files:
         print '--------', file, '--------'
         parser.read_file(file)
         parser.print_file()
         parser.build_structure()
-        pass
+        writer = Writer()
         writer.write(parser.node_file)
-        pass
+        filepath = fs.transform_filepath(file, dir_source, dir_dest)
+        file = open(filepath, 'w')
+        file.write(''.join(writer.buffer))
+
+
         print ''.join(writer.buffer)
 
 
@@ -110,9 +167,8 @@ if __name__ == '__main__':
     Node.reader = markup_input.reader
     Node.lang = markup_input.lang
 
-    directories = fs.get_directories(['/home/ron/code/python/'], recursive=True)
+    directories = fs.get_directories([options.dir_input], options.recursive)
     files = fs.get_files(directories, markup_input.extensions)
 
-    #handle_files(markup_input.parser, files)
-
-    fs.mkdir_hierarchy(files)
+    handle_files(markup_input.parser, files, options.dir_input, options.dir_output)
+    fs.copy_dir_hierarchy(files, options.dir_input, options.dir_output)

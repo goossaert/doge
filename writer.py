@@ -24,13 +24,13 @@ from node import *
 
 class Writer:
 
-    buffer = []
     
     def __init__(self):
-        pass
+        self.buffer = []
 
     # TODO check if this is possible to put all this in the node classes.
     def write(self, node_file):
+        #self.buffer = []
         for node in node_file.content:
             if node.to_explore: 
                 # TODO careful here, the order of docstring and definition is
