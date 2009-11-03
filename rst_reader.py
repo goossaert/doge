@@ -466,12 +466,12 @@ class RestructuredTextReader:
 
         for line in lines:
             indent_current = len(python_pattern.indent.match(line).group('indent'))
-            #if indent_current == indent_objective:
-                # regular description line, so just add the content
-            #    space = ' ' if buffer[-1] else ''
-            #    buffer[-1] += space + line.strip()
-            #else:
-            if True:
+            if indent_current == indent_objective:
+                #regular description line, so just add the content
+                space = ' ' if buffer[-1] else ''
+                buffer[-1] += space + line.strip()
+            else:
+            #if True:
                 # not a regular description line, so put in its own string
                 diff = indent_current - indent_objective
                 space = ' ' * diff if diff >= 0 else ''

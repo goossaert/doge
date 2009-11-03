@@ -140,9 +140,7 @@ def handle_files(parser, files, dir_source, dir_dest):
         filepath = fs.transform_filepath(file, dir_source, dir_dest)
         file = open(filepath, 'w')
         file.write(''.join(writer.buffer))
-
-
-        print ''.join(writer.buffer)
+        #print ''.join(writer.buffer)
 
 
 
@@ -170,5 +168,5 @@ if __name__ == '__main__':
     directories = fs.get_directories([options.dir_input], options.recursive)
     files = fs.get_files(directories, markup_input.extensions)
 
-    handle_files(markup_input.parser, files, options.dir_input, options.dir_output)
     fs.copy_dir_hierarchy(files, options.dir_input, options.dir_output)
+    handle_files(markup_input.parser, files, options.dir_input, options.dir_output)
