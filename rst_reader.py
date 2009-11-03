@@ -221,23 +221,27 @@ class RestructuredTextReader:
             return
 
         indent_diff = node.indent_children - node.indent
-        indent_base = node.indent_children + indent_diff # TODO: should be indent_children?
-        indent_description = indent_base + indent_diff
+        indent_base = node.indent_children # TODO: should be indent_children?
+        indent_parameter = indent_base + indent_diff # TODO: should be indent_children?
+        indent_description = indent_parameter + indent_diff
         padding = Padding(indent_base, indent_diff)
+        print 'indent', indent_base, indent_parameter, indent_description
+        #indent_parameter = len(python_pattern.indent.match(docstring[0]).group('indent'))
 
         section = node.sf.find_section(title)
         if not section:
-            section = SBSectionParameter(node.padding, title) # used to be node.padding
+            section = SBSectionParameter(padding, title) # used to be node.padding
             node.sf.sd.append(section)
-        parameter = SBParameter(node.padding, options[0]) # used to be node.padding
+        parameter = SBParameter(padding, options[0]) # used to be node.padding
         section.parameters[options[0]] = parameter
 
         first_line = [options[1].strip()] if options[1] else []
         buffer = ['']
-        buffer = self._handle_description(indent_base,
+        buffer = self._handle_description(indent_parameter,
                                           indent_description,
                                           first_line + docstring,
                                           buffer)
+        print 'single', first_line, docstring, first_line + docstring, buffer
         description = SBText(padding, buffer)
         parameter.sd.append(description)
 
@@ -397,7 +401,8 @@ class RestructuredTextReader:
 
         indent_diff = node.indent_children - node.indent
         indent_base = node.indent_children
-        indent_parameter = len(python_pattern.indent.match(docstring[0]).group('indent'))
+        indent_parameter = indent_base + indent_diff # TODO: should be indent_children?
+        #indent_parameter = len(python_pattern.indent.match(docstring[0]).group('indent'))
         indent_description = indent_parameter + indent_diff
         padding = Padding(indent_base, indent_diff)
 
@@ -425,7 +430,7 @@ class RestructuredTextReader:
                     name = infos[0][1:-1] # skip the '`' that surround the name
                     type = ''
                     buffer = self._handle_description(indent_current,
-                                                      indent_parameter,
+                                                      indent_description,
                                                       infos[1],
                                                       buffer)
                 else:
@@ -442,7 +447,7 @@ class RestructuredTextReader:
                 if line.strip():
                     # the line is not empty
                     buffer = self._handle_description(indent_current,
-                                                      indent_parameter,
+                                                      indent_description,
                                                       line,
                                                       buffer)
                 else:
@@ -461,12 +466,13 @@ class RestructuredTextReader:
     # TODO rename
     def _handle_description(self, indent_current, indent_objective, lines, buffer):
         buffer = buffer[:]
+        # TODO replace with make_list()
         if not isinstance(lines, list):
             lines = [lines]
 
         for line in lines:
             indent_current = len(python_pattern.indent.match(line).group('indent'))
-            if indent_current == indent_objective:
+            if indent_current <= indent_objective:
                 #regular description line, so just add the content
                 space = ' ' if buffer[-1] else ''
                 buffer[-1] += space + line.strip()
@@ -476,7 +482,7 @@ class RestructuredTextReader:
                 diff = indent_current - indent_objective
                 space = ' ' * diff if diff >= 0 else ''
                 buffer.append(space + line.strip())
-                #buffer.append('')
+                buffer.append('')
 
         return buffer
 

@@ -128,6 +128,7 @@ class RestructuredTextWriter:
         return words[:id_cut], words[id_cut:] 
 
 
+    # TODO: is this function used somewhere?
     def _format_lines(self, lines, len_indent, len_max=80):
         formatted = []
         len_editable = len_max - len_indent
@@ -159,7 +160,37 @@ class RestructuredTextWriter:
         newline = '\n' if not section.text or not section.text[-1].endswith('\n') else ''
         if section.text == None:
             section.text = []
-        return '\n'.join(section.padding.padding(level_indent) + line for line in section.text) + newline
+        #return '\n'.join(section.padding.padding(level_indent) + line for line in section.text) + newline
+        return '\n'.join(self._format_text(line, len(section.padding.padding(level_indent)), 80) for line in section.text) + newline
+
+
+    def _format_text(self, text, indent, size):
+        # get the position of all the spaces in the given text
+        positions_space = [index + 1 for index, char in enumerate(text) if char == ' ']
+
+        positions_cut = []
+        index_start = 0
+        index_end = 0
+        index_current = 0
+        while index_current < len(positions_space):
+            position = positions_space[index_current]
+            if position <= positions_space[index_start] + size - indent:
+                # The current space is still in the limit
+                index_end = index_current
+                index_current += 1
+            else:
+                # The current space has been found after the formatting limit
+                # therefore a cut has to be done here
+                positions_cut.append(positions_space[index_end])  
+                index_start = index_end + 1
+        
+        # Starting and ending positions are added, and sequence pairs are computed
+        positions_cut = [0] + positions_cut + [len(text)]
+        limits = [(first, second) for first, second in zip(positions_cut[:-1], positions_cut[1:])]
+
+        # The lines are constructed with valid indentation, jointed and returned
+        lines = [' ' * indent + text[limit[0]:limit[1]].strip() for limit in limits] 
+        return '\n'.join(lines)
 
 
     def make_docstring_description_sb(self, sb):
@@ -179,10 +210,14 @@ class RestructuredTextWriter:
             doc_title = '%(indent)s%(name)s : %(type)s' if type else '%(indent)s%(name)s'
             title = doc_title % {'name': name, 'type': type, 'indent': sb.padding.padding(1)}
 
-            text = ''.join([self.make_docstring_text_sb(s, level_indent=1) for s in parameter.sd])
-            #newline = '\n' if not text or (text and text[-1] != '\n') else ''
+            text = ''.join([self.make_docstring_text_sb(s, level_indent=2) for s in parameter.sd])
+            newline = '\n' if not text or (text and text[-1] != '\n') else ''
             #newline = '\n' if not text else ''
-            newline = ''
+            #newline = ''
+            #for s in parameter.sd:
+            #    for line in s.text:
+            #        print 'formatted', self._format_text(line.strip(), len(sb.padding.padding(2)), 80)
+
 
             docstring = doc_parameter % (title, text + newline)
             buffer.append(docstring)
