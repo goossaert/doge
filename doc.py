@@ -20,7 +20,9 @@ __docformat__ = "restructuredtext en"
 ## You should have received a copy of the GNU General Public License
 ## along with pydoge.  If not, see <http://www.gnu.org/licenses/>.
 
+import text
 from rst_writer import RestructuredTextWriter
+
 
 
 # TODO delete the SB class hierarchy
@@ -53,7 +55,7 @@ class SB:
                     self.sd.append(section_out)
 
     def make_docstring(self):
-        print ''
+        return ''
 
             
 
@@ -133,15 +135,24 @@ class SBBase(SB):
         return '--' + content + '--'
         #return self.writer.start(self.padding) + content + self.writer.end(self.padding)
 
+    def _make_docstring_valid(self, function):
+        content = function(self)
+        is_one_liner = False
+        if content and text.is_one_liner(content) and content.strip()[0].isalnum():
+            content = content.strip()
+            is_one_liner = True 
+        return self.writer.start(self.padding, content, is_one_liner) + content + self.writer.end(self.padding, content, is_one_liner)
+
+
 
 class SBFile(SBBase):
     def __init__(self, padding=None):
         SBBase.__init__(self, padding)
 
 
+    # TODO handle code duplication!!!!
     def make_docstring(self):
-        content = self.writer.make_docstring_file(self)
-        return self.writer.start(self.padding, content) + content + self.writer.end(self.padding)
+        return self._make_docstring_valid(self.writer.make_docstring_file)
 
 
 class SBClass(SBBase):
@@ -150,8 +161,7 @@ class SBClass(SBBase):
 
 
     def make_docstring(self):
-        content = self.writer.make_docstring_class(self)
-        return self.writer.start(self.padding, content) + content + self.writer.end(self.padding, content)
+        return self._make_docstring_valid(self.writer.make_docstring_class)
 
 
 
@@ -161,5 +171,4 @@ class SBFunction(SBBase):
 
 
     def make_docstring(self):
-        content = self.writer.make_docstring_function(self)
-        return self.writer.start(self.padding, content) + content + self.writer.end(self.padding, content)
+        return self._make_docstring_valid(self.writer.make_docstring_function)

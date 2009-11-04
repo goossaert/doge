@@ -23,7 +23,10 @@ __docformat__ = "restructuredtext en"
 
 
 import re
+
+
 import doc
+import text
 import python_pattern
 
 #from doc import SBSection
@@ -39,18 +42,18 @@ class RestructuredTextWriter:
         for section in node.sf:
             pass
 
-
-    def start(self, padding, content):
+    def start(self, padding, content, is_one_liner):
         if not content:
             return ''
-        ret = '\n' if len(content) > 1 else ''
+        ret = '\n' if not is_one_liner else ''
         return padding.padding(0) + '"""' + ret
               
 
-    def end(self, padding, content):
+    def end(self, padding, content, is_one_liner):
         if not content:
             return ''
-        return padding.padding(0) + '"""' + '\n'
+        indent = padding.padding(0) if not is_one_liner else ''
+        return indent + '"""' + '\n'
 
 
     def make_docstring_list(self, sb, list):
@@ -63,8 +66,11 @@ class RestructuredTextWriter:
             for section in sb.sd:
                 name_section = getattr(section, 'name', None)
                 if name_section and name_section == name:
-                    docstring.append(section.make_docstring())
+                    docstring_current = section.make_docstring()
+                    if docstring_current:
+                        docstring.append(docstring_current)
 
+        print 'make_docstring_list', docstring
         return '\n'.join(docstring)
 
 
@@ -74,13 +80,15 @@ class RestructuredTextWriter:
             name_section = getattr(section, 'name', None)
             if not name_section or name_section not in list:
                 #docstring.append(section.make_docstring(name_section))
-                docstring.append(section.make_docstring())
+                docstring_current = section.make_docstring()
+                if docstring_current:
+                    docstring.append(docstring_current)
 
         return '\n'.join(docstring)
 
 
     def make_docstring_sorted(self, sb, sections_start=[], sections_end=[], sections_exclude=[]):
-        ds_start = self.make_docstring_list(sb, sections_start)
+        ds_start = self.make_docstring_list(sb, sections_start )
         ds_middle = self.make_docstring_not_list(sb, sections_start + sections_end + sections_exclude)
         ds_end = self.make_docstring_list(sb, sections_end)
         #print 'make', priority, non_priority
@@ -88,7 +96,7 @@ class RestructuredTextWriter:
         newline_start = '\n' if ds_start and ds_middle else ''
         newline_middle = '\n' if ds_end and (ds_start or ds_middle) else ''
 
-        return ds_start + newline_start + ds_middle + newline_middle + ds_end
+        return ds_start + newline_start +  ds_middle + newline_middle + ds_end
 
 
     def make_docstring_file(self, sb):
@@ -161,41 +169,14 @@ class RestructuredTextWriter:
         if section.text == None:
             section.text = []
         #return '\n'.join(section.padding.padding(level_indent) + line for line in section.text) + newline
-        return '\n'.join(self._format_text(line, len(section.padding.padding(level_indent)), 80) for line in section.text) + newline
+        return '\n'.join(text.format_text(line, len(section.padding.padding(level_indent)), 80) for line in section.text) + newline
 
-
-    def _format_text(self, text, indent, size):
-        # get the position of all the spaces in the given text
-        positions_space = [index + 1 for index, char in enumerate(text) if char == ' ']
-
-        positions_cut = []
-        index_start = 0
-        index_end = 0
-        index_current = 0
-        while index_current < len(positions_space):
-            position = positions_space[index_current]
-            if position <= positions_space[index_start] + size - indent:
-                # The current space is still in the limit
-                index_end = index_current
-                index_current += 1
-            else:
-                # The current space has been found after the formatting limit
-                # therefore a cut has to be done here
-                positions_cut.append(positions_space[index_end])  
-                index_start = index_end + 1
-        
-        # Starting and ending positions are added, and sequence pairs are computed
-        positions_cut = [0] + positions_cut + [len(text)]
-        limits = [(first, second) for first, second in zip(positions_cut[:-1], positions_cut[1:])]
-
-        # The lines are constructed with valid indentation, jointed and returned
-        lines = [' ' * indent + text[limit[0]:limit[1]].strip() for limit in limits] 
-        return '\n'.join(lines)
 
 
     def make_docstring_description_sb(self, sb):
         title = sb.padding.padding(0) + ':' + sb.name + ':\n' if not sb.name.startswith('*') else ''
         level = 0 if sb.name.startswith('*') else 1
+        #print 'makedoc' + title + 'T' +'[desc]\n'.join(self.make_docstring_text_sb(s, level_indent=level) for s in sb.sd)
         return title + '\n'.join(self.make_docstring_text_sb(s, level_indent=level) for s in sb.sd)
 
     
@@ -211,7 +192,7 @@ class RestructuredTextWriter:
             title = doc_title % {'name': name, 'type': type, 'indent': sb.padding.padding(1)}
 
             text = ''.join([self.make_docstring_text_sb(s, level_indent=2) for s in parameter.sd])
-            newline = '\n' if not text or (text and text[-1] != '\n') else ''
+            newline = '\n' if not text or not text[-1].endswith('\n') else ''
             #newline = '\n' if not text else ''
             #newline = ''
             #for s in parameter.sd:

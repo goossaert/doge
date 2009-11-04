@@ -64,7 +64,9 @@ class RestructuredTextReader:
             if isinstance(section, SBSectionParameter):
                 self._cleanup_parameters(section.parameters) 
             elif isinstance(section, SBSectionDescription):
+                #print 'BEFORE cleanup:', section.sd[0].text
                 section.sd[0].text = self._cleanup_text(section.sd[0].text) 
+                #print 'AFTER cleanup:', section.sd[0].text
 
     def merge_types_section(self, node):
         # the type section has to be merged to the parameter one
@@ -115,7 +117,23 @@ class RestructuredTextReader:
 
 
     def parse_docstring(self, node):
-        docstring = self._strip_first_empty_lines(node.docstring[1:]) # omit the starting '"""'
+        seq_start = '"""'
+        seq_end = '"""'
+        #print node.docstring[0].strip()
+        # omit the starting '"""'
+        # TODO: modify to handle multiple start sequences
+        line_first = [node.docstring[0].strip()[len(seq_start):]] if node.docstring else []
+        if node.docstring:
+            print line_first, node.docstring
+        docstring = self._strip_first_empty_lines(line_first + node.docstring[1:])
+        # move the ending """
+        if docstring:
+            docstring[-1] = docstring[-1].rstrip()[:-len(seq_end)]
+            docstring.append(seq_end)
+            #else:
+            #    pass
+            #    print 'handle description ELSE', '|' + docstring[0][:-len(seq_end)] + '|'
+            #    self._add_description('*Short', node, [docstring[0].strip()[:-len(seq_end)]])
         # find the cut between descriptions and sections and handle them
         id_cut = self._find_cut(docstring, lambda s: s.strip().startswith(':'))
         self._parse_docstring_descriptions(node, docstring[:id_cut])
@@ -137,11 +155,17 @@ class RestructuredTextReader:
 
     def _parse_docstring_descriptions(self, node, docstring):
         # find the cut between short and long descriptions
+        seq_end = '"""'
         docstring = self._strip_lines(docstring)
-        if docstring and not docstring[0].startswith('"""'):
+        # TODO: modify to handle multiple end sequences
+        if docstring:# and not docstring[0].rstrip().endswith(seq_end):
+            if docstring[-1].rstrip().endswith(seq_end):
+                docstring = docstring[:-1]
             id_cut = self._find_cut(docstring, lambda s: not s.strip())
+            print 'handle description', docstring[:id_cut], '|||', docstring[id_cut+1:]
             self._add_description('*Short', node, docstring[:id_cut])
-            self._add_description('*Long', node, docstring[id_cut+1:])
+            if docstring[id_cut+1:]:
+                self._add_description('*Long', node, docstring[id_cut+1:])
 
 
     # TODO modify the function so that it first split the docstring
@@ -163,7 +187,10 @@ class RestructuredTextReader:
 
             # TODO for """, that should be endswith()
             # TODO treat cases where there is a starting """(text) and an ending (text)"""
-            if any([line_current.strip().startswith(s) for s in ('@', ':', '"""')]):
+            #   and for that, maybe exclude the content of the if one more time for """
+            #   or pre-treat the docstring and put on separate line the """
+            if any([line_current.lstrip().startswith(s) for s in ('@', ':')]) \
+              or any([line_current.rstrip().endswith(s) for s in ('"""')]):
                 # section or end of docstring detected
                 if section_current:
                     # already in a section, hence we have to treat it before
@@ -398,7 +425,6 @@ class RestructuredTextReader:
         #docstring = docstring[1:]
         docstring = self._strip_first_empty_lines(docstring)
 
-
         indent_diff = node.indent_children - node.indent
         indent_base = node.indent_children
         indent_parameter = indent_base + indent_diff # TODO: should be indent_children?
@@ -434,7 +460,7 @@ class RestructuredTextReader:
                                                       infos[1],
                                                       buffer)
                 else:
-                    # definition list
+                    # parsing definition lists
                     infos = re.split('[\s\-:]+', line.strip(), 1) 
                     name = infos[0]
                     type = infos[1] if len(infos) > 1 else ''
@@ -480,7 +506,7 @@ class RestructuredTextReader:
             #if True:
                 # not a regular description line, so put in its own string
                 diff = indent_current - indent_objective
-                space = ' ' * diff if diff >= 0 else ''
+                space = ' ' * diff if diff > 0 else ''
                 buffer.append(space + line.strip())
                 buffer.append('')
 
