@@ -42,27 +42,28 @@ section = re.compile(
     """, re.VERBOSE | re.DOTALL)
 
 
+
 class_ = re.compile(
     r"""
     (?P<indent>[\s]*?)
-    class[\s]*?
+    class[ ]*?
     (?P<name>[_\w]*?)
         (\(
         (?P<definition>[\s\,\w\=]*)
         \))?
-    [\s]*?[:][\s]*?
+    [\s]*?[:,][\s]*?
     """, re.VERBOSE | re.DOTALL)
 
 
 function = re.compile(
     r"""
     (?P<indent>[\s]*?)
-    def[\s]*?
+    def[ ]*?
     (?P<name>[_\w]*?)
-        \(
+        (\(
         (?P<definition>[\s\,\w\=]*)
-        \)
-    [\s]*?[:][\s]*?
+        \))?
+    [\s]*?[:,][\s]*?
     """, re.VERBOSE | re.DOTALL)
 
 

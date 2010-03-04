@@ -162,13 +162,51 @@ class RestructuredTextWriter:
     #                    %s%s\n'.replace(' ','')
     #    return [doc_parameter % (indent_name, name, indent_description, ''.join(description)) for name, description in parameters.items()]
 
+    def count_starting_spaces(self, line):
+        count = 0
+        for c in line:
+            if c == ' ': count += 1
+            else:        break
+        return count
+
+    def smart_strip(self, line, indent):
+        nb_spaces = self.count_starting_spaces(line)
+        trim = nb_spaces if nb_spaces <= indent else indent
+        return line[trim:].rstrip()
+
+
+    def merge_stable_areas(self, text):
+        text_merged = []
+        index = 0
+        while index < len(text):
+            if text[index].startswith(' '):
+                text_merged.append(text[index])
+                index += 1
+            else:
+                index_end = index
+                while index_end < len(text) and not text[index_end].startswith(' '):
+                    index_end += 1
+                text_merged.append(' '.join(text[index:index_end]))
+                index = index_end
+        return text_merged
 
 
     def make_docstring_text_sb(self, section, level_indent):
-        newline = '\n' if not section.text or not section.text[-1].endswith('\n') else ''
         if section.text == None:
-            section.text = []
+            section.text = [] 
+        indent = len(section.padding.padding(level_indent))
+        print 'BEFORE:', indent, section.text
+        section.text = [self.smart_strip(line, indent) for line in section.text]
+        print 'STRIP:', indent, section.text
+        section.text = self.merge_stable_areas(section.text)
+        newline = '\n' if not section.text or not section.text[-1].endswith('\n') else ''
+        print 'MERGED:', section.text
+
         #return '\n'.join(section.padding.padding(level_indent) + line for line in section.text) + newline
+        #lines = ' '.join([line.rstrip() for line in section.text])
+        #lines = [lines]
+        #print 'SECTION:', section.text, lines
+        #return '\n'.join(text.format_text(line, len(section.padding.padding(level_indent)), 80) for line in lines) + newline
         return '\n'.join(text.format_text(line, len(section.padding.padding(level_indent)), 80) for line in section.text) + newline
 
 

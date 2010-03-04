@@ -133,13 +133,15 @@ def handle_files(parser, files, dir_source, dir_dest):
     for file in files:
         print '--------', file, '--------'
         parser.read_file(file)
-        parser.print_file()
-        parser.build_structure()
+        parser.print_file()  # what is this for?
+        parser.build_structure() # build doc from actual file
         writer = Writer()
         writer.write(parser.node_file)
         filepath = fs.transform_filepath(file, dir_source, dir_dest)
+        print 'path', file, dir_source, dir_dest, filepath
         file = open(filepath, 'w')
         file.write(''.join(writer.buffer))
+        file.close()
         #print ''.join(writer.buffer)
 
 

@@ -34,6 +34,7 @@ class PythonLang:
 
     def make_prototype_class(self, node):
         base_classes = '(' + node.definition + ')' if node.definition else ''
+
         return node.indent * ' ' + 'class ' + node.name + base_classes + ':'
 
 
@@ -62,6 +63,7 @@ class PythonParser:
         self.nodes.append(self.node_file)
 
         in_docstring = False
+        definition = []
         for line in file:
             if in_docstring:
                 # Handling docstrings
@@ -85,21 +87,34 @@ class PythonParser:
                         in_docstring = True 
                     continue
 
+            # Bufferize definition lists
+            if definition \
+              or line.lstrip().startswith('class ') \
+              or line.lstrip().startswith('def '):
+              #or python_pattern.class_.match(line) \
+              #or python_pattern.function.match(line):
+                definition += [line] 
+                if not line.rstrip().endswith(':'):
+                    continue
+
+            # Definition done buffering, handle it
             node = None
             match = None
-            if python_pattern.class_.match(line):
-                match = python_pattern.class_.match(line)
+            definition = ''.join([line for line in definition])
+            if python_pattern.class_.match(definition):
+                match = python_pattern.class_.match(definition)
                 node = ClassNode()
-            elif python_pattern.function.match(line):
-                match = python_pattern.function.match(line)
+            elif python_pattern.function.match(definition):
+                match = python_pattern.function.match(definition)
                 node = FunctionNode()
+            definition = [] # prepare for next iteration
 
             if node:
                 # Filling the node
                 node.indent = len(match.group('indent'))
                 node.name = match.group('name')
                 node.definition = match.group('definition')
-                
+
                 # Modifying the state of the parser
                 self._pop_nodes(node)
                 node.parent = self.nodes[-1]
@@ -111,6 +126,7 @@ class PythonParser:
                 node_code.parent = self.nodes[-1]
                 self.nodes[-1].content.append(node_code)
 
+        file.close()
 
 
     def _print(self, node):
@@ -186,6 +202,7 @@ class PythonParser:
                                          node_parent,
                                          'Exceptions')
 
+                    # TODO handle the yield here too
                     # Return
                     self._handle_section_description(python_pattern.return_,
                                          node,

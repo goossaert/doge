@@ -90,7 +90,8 @@ def copy_dir_hierarchy(files, dir_source, dir_dest, mode=0755):
 
 
 def transform_filepath(filepath, dir_source, dir_dest):
-    return os.path.join(dir_dest, filepath[len(dir_source):])
+    #print 'file_path', dir_dest, filepath[len(dir_source)+1:]
+    return os.path.join(dir_dest + '/', filepath[len(dir_source)+1:])
 
 
 # TODO function to copy directory hierarchy

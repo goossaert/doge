@@ -136,6 +136,7 @@ class RestructuredTextReader:
             #    self._add_description('*Short', node, [docstring[0].strip()[:-len(seq_end)]])
         # find the cut between descriptions and sections and handle them
         id_cut = self._find_cut(docstring, lambda s: s.strip().startswith(':'))
+        #print 'after strip', docstring
         self._parse_docstring_descriptions(node, docstring[:id_cut])
         self._parse_docstring_sections(node, docstring[id_cut:])
 
@@ -156,7 +157,7 @@ class RestructuredTextReader:
     def _parse_docstring_descriptions(self, node, docstring):
         # find the cut between short and long descriptions
         seq_end = '"""'
-        docstring = self._strip_lines(docstring)
+        #docstring = self._strip_lines(docstring)
         # TODO: modify to handle multiple end sequences
         if docstring:# and not docstring[0].rstrip().endswith(seq_end):
             if docstring[-1].rstrip().endswith(seq_end):
@@ -196,7 +197,7 @@ class RestructuredTextReader:
                     # already in a section, hence we have to treat it before
                     # setting up the new one
                     #sb_section = SBSection(node.padding, section_current, option_current)
-                    if line_previous.strip().startswith('@'):
+                    if line_previous.lstrip().startswith('@'):
                         parser = self.parse_section_single
                     elif section_previous in sections_parameter: 
                         parser = self.parse_section_parameter 
@@ -263,13 +264,14 @@ class RestructuredTextReader:
         section.parameters[options[0]] = parameter
 
         first_line = [options[1].strip()] if options[1] else []
-        buffer = ['']
-        buffer = self._handle_description(indent_parameter,
-                                          indent_description,
-                                          first_line + docstring,
-                                          buffer)
-        print 'single', first_line, docstring, first_line + docstring, buffer
-        description = SBText(padding, buffer)
+        #buffer = ['']
+        #buffer = self._handle_description(indent_parameter,
+        #                                  indent_description,
+        #                                  first_line + docstring,
+        #                                  buffer)
+        #print 'single', first_line, docstring, first_line + docstring, buffer
+        # description = SBText(padding, buffer) with use of handle description
+        description = SBText(padding, first_line + docstring)
         parameter.sd.append(description)
 
 
@@ -400,13 +402,13 @@ class RestructuredTextReader:
         indent_description = len(python_pattern.indent.match(docstring[0]).group('indent'))
         padding = Padding(indent_base, indent_diff)
         buffer = ['']
-        for line in docstring:
-            indent_current = len(python_pattern.indent.match(line).group('indent'))
-            if indent_current >= indent_description:
-                buffer = self._handle_description(indent_current,
-                                                  indent_description,
-                                                  line,
-                                                  buffer)
+        #for line in docstring:
+        #    indent_current = len(python_pattern.indent.match(line).group('indent'))
+        #    if indent_current >= indent_description:
+        #        buffer = self._handle_description(indent_current,
+        #                                          indent_description,
+        #                                          line,
+        #                                          buffer)
 
 
         #description = SBText(padding, buffer)
@@ -414,7 +416,8 @@ class RestructuredTextReader:
         #print 'parse_section_text:', name, padding.base, padding.diff
         #section.sd.append(description)
         #node.sf.sd.append(section)
-        self._add_description(name, node, buffer, padding, options)
+        self._add_description(name, node, docstring, padding, options)
+        #self._add_description(name, node, buffer, padding, options)
 
 
 
@@ -455,10 +458,11 @@ class RestructuredTextReader:
                     infos = [item for item in infos if item]
                     name = infos[0][1:-1] # skip the '`' that surround the name
                     type = ''
-                    buffer = self._handle_description(indent_current,
-                                                      indent_description,
-                                                      infos[1],
-                                                      buffer)
+                    #buffer = self._handle_description(indent_current,
+                    #                                  indent_description,
+                    #                                  infos[1],
+                    #                                  buffer)
+                    buffer += [infos[1]]
                 else:
                     # parsing definition lists
                     infos = re.split('[\s\-:]+', line.strip(), 1) 
@@ -472,10 +476,11 @@ class RestructuredTextReader:
                 # just skip the line!
                 if line.strip():
                     # the line is not empty
-                    buffer = self._handle_description(indent_current,
-                                                      indent_description,
-                                                      line,
-                                                      buffer)
+                    #buffer = self._handle_description(indent_current,
+                    #                                  indent_description,
+                    #                                  line,
+                    #                                  buffer)
+                    buffer += [line]
                 else:
                     # the line is empty
                     buffer.append('\n')
@@ -489,7 +494,7 @@ class RestructuredTextReader:
             #print 'param', parameter, description, buffer
 
 
-    # TODO rename
+    #TODO: delete     #previous TODO: rename
     def _handle_description(self, indent_current, indent_objective, lines, buffer):
         buffer = buffer[:]
         # TODO replace with make_list()
@@ -497,7 +502,7 @@ class RestructuredTextReader:
             lines = [lines]
 
         for line in lines:
-            indent_current = len(python_pattern.indent.match(line).group('indent'))
+            #indent_current = len(python_pattern.indent.match(line).group('indent'))
             if indent_current <= indent_objective:
                 #regular description line, so just add the content
                 space = ' ' if buffer[-1] else ''
