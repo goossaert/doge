@@ -128,17 +128,54 @@ def check_options(options):
         exit()
 
 
+def handle_buffer(buffer):
+    markup_input = markup.find_markup('rst', 'python')
+    markup_output = markup.find_markup('rst', 'python')
+
+    #print buffer
+
+    if not markup_output:
+        markup_output = markup_input
+
+    # TODO pass markup directly instead of assigning to Node
+    Node.writer = markup_output.writer
+    Node.reader = markup_input.reader
+    Node.lang = markup_input.lang
+
+    parser = markup_input.parser
+    parser.read_file(buffer)
+    parser.print_file()  # what is this for?
+    parser.build_structure() # build doc from actual file
+    writer = Writer()
+    writer.write(parser.node_file)
+
+    return writer.buffer
+
+
+def handle_standard_io(parser):
+    parser.read_file(sys.stdin)
+    parser.print_file()  # what is this for?
+    parser.build_structure() # build doc from actual file
+    writer = Writer()
+    writer.write(parser.node_file)
+    for line in writer.buffer:
+        print line.rstrip()
+
+
+
 
 def handle_files(parser, files, dir_source, dir_dest):
-    for file in files:
-        print '--------', file, '--------'
+    for filename in files:
+        print '--------', filename, '--------'
+        file = open(filename, 'r')
         parser.read_file(file)
+        file.close()
         parser.print_file()  # what is this for?
         parser.build_structure() # build doc from actual file
         writer = Writer()
         writer.write(parser.node_file)
-        filepath = fs.transform_filepath(file, dir_source, dir_dest)
-        print 'path', file, dir_source, dir_dest, filepath
+        filepath = fs.transform_filepath(filename, dir_source, dir_dest)
+        print 'path', filename, dir_source, dir_dest, filepath
         file = open(filepath, 'w')
         file.write(''.join(writer.buffer))
         file.close()
@@ -167,8 +204,12 @@ if __name__ == '__main__':
     Node.reader = markup_input.reader
     Node.lang = markup_input.lang
 
-    directories = fs.get_directories([options.dir_input], options.recursive)
-    files = fs.get_files(directories, markup_input.extensions)
+    print options.dir_input
+    if options.dir_input == '-':
+        handle_standard_io(markup_input.parser)
+    else:
+        directories = fs.get_directories([options.dir_input], options.recursive)
+        files = fs.get_files(directories, markup_input.extensions)
 
-    fs.copy_dir_hierarchy(files, options.dir_input, options.dir_output)
-    handle_files(markup_input.parser, files, options.dir_input, options.dir_output)
+        fs.copy_dir_hierarchy(files, options.dir_input, options.dir_output)
+        handle_files(markup_input.parser, files, options.dir_input, options.dir_output)

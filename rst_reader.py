@@ -123,8 +123,8 @@ class RestructuredTextReader:
         # omit the starting '"""'
         # TODO: modify to handle multiple start sequences
         line_first = [node.docstring[0].strip()[len(seq_start):]] if node.docstring else []
-        if node.docstring:
-            print line_first, node.docstring
+        #if node.docstring:
+        #    print line_first, node.docstring
         docstring = self._strip_first_empty_lines(line_first + node.docstring[1:])
         # move the ending """
         if docstring:
@@ -253,7 +253,7 @@ class RestructuredTextReader:
         indent_parameter = indent_base + indent_diff # TODO: should be indent_children?
         indent_description = indent_parameter + indent_diff
         padding = Padding(indent_base, indent_diff)
-        print 'indent', indent_base, indent_parameter, indent_description
+        #print 'indent', indent_base, indent_parameter, indent_description
         #indent_parameter = len(python_pattern.indent.match(docstring[0]).group('indent'))
 
         section = node.sf.find_section(title)

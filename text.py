@@ -27,8 +27,8 @@ def format_text(text, indent, size):
 
     # get the position of all the spaces in the given text
     positions_space = [0] + [index + 1 for index, char in enumerate(text) if char == ' ']
-    print positions_space
-    print text
+    #print positions_space
+    #print text
 
     positions_cut = []
     index_start = 0
@@ -43,7 +43,7 @@ def format_text(text, indent, size):
             # The current space has been found after the formatting limit
             # therefore a cut has to be done here
             positions_cut.append(positions_space[index_end])
-            print '--- CUT FOUND:', positions_space[index_start], positions_space[index_end], positions_space[index_end] - positions_space[index_start]
+            #print '--- CUT FOUND:', positions_space[index_start], positions_space[index_end], positions_space[index_end] - positions_space[index_start]
             index_start = index_end
             index_current = index_start
     
@@ -54,9 +54,9 @@ def format_text(text, indent, size):
 
     # The lines are constructed with valid indentation, jointed and returned
     newline = '\n' if text.endswith('\n') else ''
-    print 'BEFORE format', text
+    #print 'BEFORE format', text
     lines = [' ' * indent + text[limit[0]:limit[1]].rstrip() for limit in limits] 
-    print 'AFTER format', lines
+    #print 'AFTER format', lines
     return '\n'.join(lines) + newline
 
 

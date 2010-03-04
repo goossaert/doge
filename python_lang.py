@@ -56,8 +56,7 @@ class PythonParser:
             del self.nodes[-1]
 
 
-    def read_file(self, name_file):
-        file = open(name_file, 'r')
+    def read_file(self, file):
 
         self.node_file = FileNode(-1)
         self.nodes.append(self.node_file)
@@ -126,7 +125,6 @@ class PythonParser:
                 node_code.parent = self.nodes[-1]
                 self.nodes[-1].content.append(node_code)
 
-        file.close()
 
 
     def _print(self, node):
@@ -183,18 +181,19 @@ class PythonParser:
                     # All non-explorable node (mostly CodeNodes)
                     node_class = node.find_parent_class()# if node != None else None
 
-                    # Instance variables
-                    self._handle_section_parameter(python_pattern.self,
-                                         node,
-                                         node_class,
-                                         'IVariables')
-
-                    # Class variables
-                    if isinstance(node_parent, ClassNode):
-                        self._handle_section_parameter(python_pattern.assignment,
+                    if node_class:
+                        # Instance variables
+                        self._handle_section_parameter(python_pattern.self,
                                              node,
                                              node_class,
-                                             'CVariables')
+                                             'IVariables')
+
+                        # Class variables
+                        if isinstance(node_parent, ClassNode):
+                            self._handle_section_parameter(python_pattern.assignment,
+                                                 node,
+                                                 node_class,
+                                                 'CVariables')
 
                     # Exceptions
                     self._handle_section_parameter(python_pattern.exception,

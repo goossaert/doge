@@ -70,7 +70,7 @@ class RestructuredTextWriter:
                     if docstring_current:
                         docstring.append(docstring_current)
 
-        print 'make_docstring_list', docstring
+        #print 'make_docstring_list', docstring
         return '\n'.join(docstring)
 
 
@@ -195,12 +195,12 @@ class RestructuredTextWriter:
         if section.text == None:
             section.text = [] 
         indent = len(section.padding.padding(level_indent))
-        print 'BEFORE:', indent, section.text
+        #print 'BEFORE:', indent, section.text
         section.text = [self.smart_strip(line, indent) for line in section.text]
-        print 'STRIP:', indent, section.text
+        #print 'STRIP:', indent, section.text
         section.text = self.merge_stable_areas(section.text)
         newline = '\n' if not section.text or not section.text[-1].endswith('\n') else ''
-        print 'MERGED:', section.text
+        #print 'MERGED:', section.text
 
         #return '\n'.join(section.padding.padding(level_indent) + line for line in section.text) + newline
         #lines = ' '.join([line.rstrip() for line in section.text])
