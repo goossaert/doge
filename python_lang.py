@@ -1,7 +1,7 @@
 """
 Python language module.
 """
-__docformat__ = "restructuredtext en"
+#__docformat__ = "restructuredtext en"
 
 ## Copyright (c) 2009 Emmanuel Goossaert 
 ##
@@ -120,11 +120,22 @@ class PythonParser:
                 self.nodes[-1].content.append(node)
                 self.nodes.append(node)
             else:
+                #node_code = CodeNode(-1)
+                #node_code.content = line
+                #node_code.parent = self.nodes[-1]
+                #self.nodes[-1].content.append(node_code)
                 node_code = CodeNode(-1)
+                match = python_pattern.indent.match(line)
+                node_code.indent = len(match.group('indent'))
                 node_code.content = line
+                self._pop_nodes(node_code)
                 node_code.parent = self.nodes[-1]
                 self.nodes[-1].content.append(node_code)
 
+        # TODO: find a better way to do that (set correct indent in the description)
+        self.node_file.indent = -4
+        self.node_file.indent_children = 0
+        self.node_file.compute_padding()
 
 
     def _print(self, node):
@@ -194,6 +205,14 @@ class PythonParser:
                                                  node,
                                                  node_class,
                                                  'CVariables')
+
+                    # Module variable
+                    if isinstance(node_parent, FileNode):
+                        print 'Module var', node, node_parent, node.content
+                        self._handle_section_parameter(python_pattern.assignment,
+                                             node,
+                                             node_parent,
+                                             'Variables')
 
                     # Exceptions
                     self._handle_section_parameter(python_pattern.exception,

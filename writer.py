@@ -24,24 +24,30 @@ from node import *
 
 class Writer:
 
-    
+
     def __init__(self):
         self.buffer = []
 
+
     # TODO check if this is possible to put all this in the node classes.
-    def write(self, node_file):
+    def write(self, node):
         #self.buffer = []
-        for node in node_file.content:
-            if node.to_explore: 
-                # TODO careful here, the order of docstring and definition is
-                # up to every language and/or documentation system
+
+        if node.to_explore:
+            if hasattr(node, 'make_prototype'):
                 self.buffer.append(node.make_prototype() + '\n')
-                node.parse_docstring()
-                node.merge_docstring()
-                docstring = node.make_docstring()
-                #docstring = None
-                if docstring:
-                    self.buffer.append(docstring)
-                self.write(node)
-            else:
-                self.buffer.append(node.content)
+
+            # TODO careful here, the order of docstring and definition is
+            # up to every language and/or documentation system
+            node.parse_docstring()
+            node.merge_docstring()
+            docstring = node.make_docstring()
+            if docstring:
+                self.buffer.append(docstring)
+
+            # Go for children nodes
+            for node_child in node.content:
+                self.write(node_child)
+        else:
+            self.buffer.append(node.content)
+

@@ -204,7 +204,6 @@ if __name__ == '__main__':
     Node.reader = markup_input.reader
     Node.lang = markup_input.lang
 
-    print options.dir_input
     if options.dir_input == '-':
         handle_standard_io(markup_input.parser)
     else:

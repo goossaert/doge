@@ -95,7 +95,8 @@ class FileNode(Node):
 
 
     def make_docstring(self):
-        return self.sc.make_docstring(self)
+        #return self.sc.make_docstring(self)
+        return self.sc.make_docstring()
 
 
     def parse_docstring(self):

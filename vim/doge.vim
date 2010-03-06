@@ -1,4 +1,4 @@
-function! Pydoge_inner()
+function! Doge_inner(...)
 python << endpython
 import vim
 import pydoge.main
@@ -9,11 +9,14 @@ row_call -= 1
 row_current = row_call
 cb = vim.current.buffer
 
+# Get arg
+nb_args = int(vim.eval("a:0"))
+statements = [vim.eval("a:%d" % (index + 1)) for index in range(nb_args)]
+
 # Find closest class or method
 while row_current >= 0:
     line = cb[row_current]
-    if line.lstrip().startswith('class') \
-      or line.lstrip().startswith('def'):
+    if any(line.lstrip().startswith(s) for s in statements):
         break
     row_current -= 1
 
@@ -31,7 +34,7 @@ endfunction
 
 
 
-function! Pydoge_object()
+function! Doge_object(...)
 python << endpython
 import vim
 import pydoge.main
@@ -42,10 +45,16 @@ row_call -= 1
 row_current = row_call
 cb = vim.current.buffer
 
-row_begin = int(vim.eval("Pydoge_inner()"))
+# Get arg
+nb_args = int(vim.eval("a:0"))
+statements = [vim.eval("a:%d" % (index + 1)) for index in range(nb_args)]
+#statements = ['def']
+
+row_begin = int(vim.eval('Doge_inner("' + '","'.join(statements) + '")'))
 row_begin -= 1 # python domain
 #line_stop = line
 
+print 'Doge_inner("' + '","'.join(statements) + '")'
 row_current = row_begin # start on definition line
 
 # Escape possible multi-line definition
@@ -70,14 +79,15 @@ if row_current < len(cb):
     while row_current < len(cb) and (not cb[row_current] or cb[row_current].startswith(indent * ' ')):
         row_current += 1
 
-    row_end = row_current + 1
+    row_end = row_current - 1
 
-    print row_begin, row_end #, cb[row_begin], cb[row_end - 1]
+    #print row_begin, row_end #, cb[row_begin], cb[row_end - 1]
+    #print row_begin, ','.join(statements)
 
     # Update buffer
     buffer = [l + '\n' for l in cb[row_begin:row_end]]
 
-    end = cb[row_end + 1:]
+    end = cb[row_end:]
     buffer_new = pydoge.main.handle_buffer(buffer)
 
     # Delete non necessary empty lines
@@ -92,6 +102,11 @@ if row_current < len(cb):
             cb.append(subline)
     for line in end:
         cb.append(line)
+
+    # delete empty line at the top if it appears (sometimes needed due
+    # to some bug
+    #if not cb[row_begin].strip():
+    #    del cb[row_begin]
 
     # Set cursor on object head
     vim.current.window.cursor = (row_content, indent)
@@ -108,7 +123,7 @@ endfunction
 
 
 
-function! Pydoge_file()
+function! Doge_file()
 python << endpython
 import vim
 import pydoge.main
@@ -119,8 +134,10 @@ row_call -= 1
 row_current = row_call
 cb = vim.current.buffer
 
-row_stop = int(vim.eval("Pydoge_inner()"))
-line_stop = cb[row - 1]
+statements = ["def", "class"]
+row_stop = int(vim.eval('Doge_inner("' + '","'.join(statements) + '")'))
+#row_stop = int(vim.eval('Doge_inner("def", "class")'))
+line_stop = cb[row_stop - 1]
 
 # Count identical definitions before this one
 row_current -= 1
@@ -142,12 +159,23 @@ for line in buffer_new:
 
 
 # Find correct line
+row_stop = 0
 for index, line in enumerate(cb):
     if line == line_stop:
-        row_stop = index + 1
+        row_stop = index
         if nb_same == 0:
             break
         nb_same -= 1
+
+
+# delete empty line at the top if it appears (sometimes needed due
+# to some bug
+#if row_stop > 0:
+#    if not cb[row_stop - 1].strip():
+#        del cb[row_stop - 1]
+
+#print row_stop
+
 
 # Set cursor
 vim.current.window.cursor = (row_stop, 0)
@@ -158,6 +186,6 @@ vim.current.window.cursor = (row_stop, 0)
 endpython
 endfunction
 
-"map <silent> ` :call Pydoge_file()<cr>
-ab dgf call Pydoge_file()<cr>
-ab dgm call Pydoge_object()<cr>
+ab dgf call Doge_file()<cr>
+ab dgm call Doge_object("def")<cr>
+ab dgc call Doge_object("class")<cr>
