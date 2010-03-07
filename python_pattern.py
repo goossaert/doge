@@ -95,6 +95,6 @@ exception = re.compile(
 return_ = re.compile(
     r"""
     (?P<indent>[\s]*)
-    return[\s]*
+    (return|yield)[\s]*
     [^\s]+
     """, re.VERBOSE | re.DOTALL)

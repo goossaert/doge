@@ -1,7 +1,7 @@
 """
 Python language module.
 """
-#__docformat__ = "restructuredtext en"
+__docformat__ = "restructuredtext en"
 
 ## Copyright (c) 2009 Emmanuel Goossaert 
 ##
@@ -53,6 +53,7 @@ class PythonParser:
 
     def _pop_nodes(self, node):
         while self.nodes and self.nodes[-1].indent >= node.indent:
+            print 'pop', self.nodes[-1], self.nodes[-1].indent, '| call:', node, node.indent
             del self.nodes[-1]
 
 
@@ -88,8 +89,7 @@ class PythonParser:
 
             # Bufferize definition lists
             if definition \
-              or line.lstrip().startswith('class ') \
-              or line.lstrip().startswith('def '):
+              or any(line.lstrip().startswith(s) for s in ['def ', 'class ']):
               #or python_pattern.class_.match(line) \
               #or python_pattern.function.match(line):
                 definition += [line] 
@@ -127,8 +127,10 @@ class PythonParser:
                 node_code = CodeNode(-1)
                 match = python_pattern.indent.match(line)
                 node_code.indent = len(match.group('indent'))
+                #print 'CODE:', node_code.indent, line.rstrip()
                 node_code.content = line
-                self._pop_nodes(node_code)
+                if line.strip(): # empty lines can mess the stack up
+                    self._pop_nodes(node_code)
                 node_code.parent = self.nodes[-1]
                 self.nodes[-1].content.append(node_code)
 
@@ -169,8 +171,11 @@ class PythonParser:
     def _handle_section_description(self, pattern, node_current, node_parent, title):
         match = pattern.match(node_current.content)
         if match:
-                # Description
-                # Note: this code comes rom rst_reader.py/_add_description
+            print 'node', title, node_current, node_parent
+            section = node_parent.sc.find_section(title)
+            if not section:
+            # Description
+            # Note: this code comes rom rst_reader.py/_add_description
                 section = SBSectionDescription(node_parent.padding, title)
                 description = SBText(node_parent.padding, ['']) # [] used to be ''
                 section.sd.append(description)
@@ -220,8 +225,7 @@ class PythonParser:
                                          node_parent,
                                          'Exceptions')
 
-                    # TODO handle the yield here too
-                    # Return
+                    # Return and yield
                     self._handle_section_description(python_pattern.return_,
                                          node,
                                          node_parent,
