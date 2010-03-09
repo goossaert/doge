@@ -34,8 +34,9 @@ class Writer:
         #self.buffer = []
 
         if node.to_explore:
+            self.buffer.extend(node.block_before)
             if hasattr(node, 'make_prototype'):
-                self.buffer.append(node.make_prototype() + '\n')
+                self.buffer.append(node.make_prototype())# + '\n')
 
             # TODO careful here, the order of docstring and definition is
             # up to every language and/or documentation system

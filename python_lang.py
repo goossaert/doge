@@ -30,68 +30,88 @@ from doc import *
 from node import *
 
 
+# TODO: why writing the re-building the prototypes?
+#       better just to paste the codenodes
 class PythonLang:
 
     def make_prototype_class(self, node):
-        base_classes = '(' + node.definition + ')' if node.definition else ''
-
-        return node.indent * ' ' + 'class ' + node.name + base_classes + ':'
+        #print 'class def:', node.definition
+        return node.definition
+        #base_classes = '(' + node.parents + ')' if node.parents else ''
+        #return node.indent * ' ' + 'class ' + node.name + base_classes + ':'
 
 
     def make_prototype_function(self, node):
-        return node.indent * ' ' + 'def ' + node.name + '(' + node.definition + ')' + ':'
+        #print 'fct def:', node.definition
+        return node.definition
+        #return node.indent * ' ' + 'def ' + node.name + '(' + node.arguments + ')' + ':'
 
 
 
 class PythonParser:
 
     def __init__(self):
-        self.module = None
-        self.nodes = []
-        self.node_file = None
+        pass
+
+    def _pop_stack(self, stack, node):
+        while stack and stack[-1].indent >= node.indent:
+            print 'pop', stack[-1], stack[-1].indent, '| call:', node, node.indent
+            del stack[-1]
 
 
-    def _pop_nodes(self, node):
-        while self.nodes and self.nodes[-1].indent >= node.indent:
-            print 'pop', self.nodes[-1], self.nodes[-1].indent, '| call:', node, node.indent
-            del self.nodes[-1]
-
-
+    # TODO some operations can be put into methods to reduce
+    # the size of the read_file method
     def read_file(self, file):
+        stack = []
+        node_file = FileNode(-1)
+        stack.append(node_file)
+        #node_file = None
 
-        self.node_file = FileNode(-1)
-        self.nodes.append(self.node_file)
-
+        in_comment = False
+        comments = []
         in_docstring = False
+        docstring = []
         definition = []
         for line in file:
             if in_docstring:
                 # Handling docstrings
-                self.nodes[-1].docstring.append(line)
+                #nodes[-1].docstring.append(line)
+                docstring.append(line)
                 # TODO beware with endswith: maybe there is a \n at the very end
                 if line.strip().endswith('"""'):
                     # Exiting docstrings
+                    stack[-1].block_after = docstring[:]
+                    docstring = []
                     in_docstring = False
                 continue  
 
-            if self.nodes[-1].indent_children == None and line.strip() != '':
+            if in_comment and not line.strip() \
+              or line.lstrip().startswith('#'):
+                in_comment = True
+                comments.append(line)
+                continue
+            else:
+                in_comment = False
+
+            if stack[-1].indent_children == None and line.strip() != '':
                 indent = python_pattern.indent.match(line).group('indent')
-                self.nodes[-1].indent_children = len(indent)
-                self.nodes[-1].compute_padding()
+                stack[-1].indent_children = len(indent)
+                stack[-1].compute_padding()
 
                 if line.strip().startswith('"""'):
                     # Entering docstrings
-                    self.nodes[-1].docstring.append(line)
+                    #nodes[-1].docstring.append(line)
                     if len(line.strip()) < 6 or not line.strip().endswith('"""'):
-                        # If this is not a one line docstring, then switch the flag
+                        # If this is not a one line docstring, then save and switch the flag
+                        docstring.append(line)
                         in_docstring = True 
+                    else:
+                        stack[-1].block_after = [line]
                     continue
 
             # Bufferize definition lists
             if definition \
               or any(line.lstrip().startswith(s) for s in ['def ', 'class ']):
-              #or python_pattern.class_.match(line) \
-              #or python_pattern.function.match(line):
                 definition += [line] 
                 if not line.rstrip().endswith(':'):
                     continue
@@ -99,55 +119,71 @@ class PythonParser:
             # Definition done buffering, handle it
             node = None
             match = None
+            listname = None
             definition = ''.join([line for line in definition])
             if python_pattern.class_.match(definition):
                 match = python_pattern.class_.match(definition)
                 node = ClassNode()
+                listname = 'parents'
             elif python_pattern.function.match(definition):
                 match = python_pattern.function.match(definition)
                 node = FunctionNode()
-            definition = [] # prepare for next iteration
+                listname = 'arguments'
 
             if node:
                 # Filling the node
+                node.definition = definition # save the whole definition
                 node.indent = len(match.group('indent'))
                 node.name = match.group('name')
-                node.definition = match.group('definition')
+                setattr(node, listname, match.group(listname))
+                node.block_before = comments
+                print 'save before', comments
 
                 # Modifying the state of the parser
-                self._pop_nodes(node)
-                node.parent = self.nodes[-1]
-                self.nodes[-1].content.append(node)
-                self.nodes.append(node)
+                self._pop_stack(stack, node)
+                node.parent = stack[-1]
+                stack[-1].content.append(node)
+                stack.append(node)
             else:
                 #node_code = CodeNode(-1)
                 #node_code.content = line
-                #node_code.parent = self.nodes[-1]
-                #self.nodes[-1].content.append(node_code)
-                node_code = CodeNode(-1)
-                match = python_pattern.indent.match(line)
-                node_code.indent = len(match.group('indent'))
-                #print 'CODE:', node_code.indent, line.rstrip()
-                node_code.content = line
-                if line.strip(): # empty lines can mess the stack up
-                    self._pop_nodes(node_code)
-                node_code.parent = self.nodes[-1]
-                self.nodes[-1].content.append(node_code)
+                #node_code.parent = nodes[-1]
+                #nodes[-1].content.append(node_code)
+                lines = comments + [line]
+
+                for l in lines:
+                    node_code = CodeNode(-1)
+                    match = python_pattern.indent.match(l)
+                    node_code.indent = len(match.group('indent'))
+                    #print 'CODE:', node_code.indent, line.rstrip()
+                    node_code.content = l
+                    if line.strip(): # empty lines can mess the stack up
+                        self._pop_stack(stack, node_code)
+                    node_code.parent = stack[-1]
+                    stack[-1].content.append(node_code)
+
+            # prepare for next iteration
+            definition = [] 
+            comments = []
 
         # TODO: find a better way to do that (set correct indent in the description)
-        self.node_file.indent = -4
-        self.node_file.indent_children = 0
-        self.node_file.compute_padding()
+        node_file.indent = -4
+        node_file.indent_children = 0
+        node_file.compute_padding()
+
+        return node_file
 
 
-    def _print(self, node):
-        if isinstance(node, FileNode) or isinstance(node, ClassNode) or isinstance(node, FunctionNode):
-            for sub in node.content:
-                self._print(sub)
+    # TODO: to delete
+    #def _print(self, node):
+    #    if isinstance(node, FileNode) or isinstance(node, ClassNode) or isinstance(node, FunctionNode):
+    #        for sub in node.content:
+    #            self._print(sub)
 
 
-    def print_file(self):
-        self._print(self.node_file)
+    # TODO: to delete
+    #def print_file(self):
+    #    self._print(node_file)
 
 
     def _handle_section_parameter(self, pattern, node_current, node_parent, title):
@@ -186,8 +222,8 @@ class PythonParser:
     # TODO check if this is possible to put all this in the node classes.
     # TODO handle return
     # TODO handle raise
-    def build_structure(self):
-        stack = [self.node_file] 
+    def build_structure(self, node_file):
+        stack = [node_file] 
         while stack:
             node_parent = stack.pop()
             for node in node_parent.content:
@@ -213,7 +249,6 @@ class PythonParser:
 
                     # Module variable
                     if isinstance(node_parent, FileNode):
-                        print 'Module var', node, node_parent, node.content
                         self._handle_section_parameter(python_pattern.assignment,
                                              node,
                                              node_parent,
@@ -236,7 +271,7 @@ class PythonParser:
             if isinstance(node_parent, FunctionNode):
                 section = SBSectionParameter(node_parent.padding, 'Parameters')
                 node_parent.sc.sd.append(section)
-                parameters = re.split('[^\w=]+', node_parent.definition)
+                parameters = re.split('[^\w=]+', node_parent.arguments)
                 for parameter in parameters:
                     if parameter and parameter != 'self':
                         name = re.split('[=]+', parameter)[0]

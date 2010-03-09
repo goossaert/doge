@@ -119,13 +119,14 @@ class RestructuredTextReader:
     def parse_docstring(self, node):
         seq_start = '"""'
         seq_end = '"""'
-        #print node.docstring[0].strip()
+        if node.block_after:
+            print 'parse:', node.block_after[0].strip()
         # omit the starting '"""'
         # TODO: modify to handle multiple start sequences
-        line_first = [node.docstring[0].strip()[len(seq_start):]] if node.docstring else []
+        line_first = [node.block_after[0].strip()[len(seq_start):]] if node.block_after else []
         #if node.docstring:
         #    print line_first, node.docstring
-        docstring = self._strip_first_empty_lines(line_first + node.docstring[1:])
+        docstring = self._strip_first_empty_lines(line_first + node.block_after[1:])
         # move the ending """
         if docstring:
             docstring[-1] = docstring[-1].rstrip()[:-len(seq_end)]
@@ -172,7 +173,7 @@ class RestructuredTextReader:
     # TODO modify the function so that it first split the docstring
     # into sections, and then treat them?
     def _parse_docstring_sections(self, node, docstring):
-        docstring = self._strip_first_empty_lines(node.docstring[1:]) # omit the starting '"""'
+        docstring = self._strip_first_empty_lines(node.block_after[1:]) # omit the starting '"""'
         id_section = None
         line_previous = ''
         options_current = None

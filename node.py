@@ -83,7 +83,8 @@ class FileNode(Node):
     def __init__(self, indent=None):
         Node.__init__(self, indent, to_explore=True) 
         #self.descriptions = []
-        self.docstring = []
+        self.block_before = []
+        self.block_after  = []
         self.sf = SBFile()
         self.sc = SBFile()
         #self.parameters = {}
@@ -110,9 +111,10 @@ class FileNode(Node):
 
 
 class ClassNode(Node):
-    def __init__(self, indent=None, name=None, definition=None):
+    def __init__(self, indent=None, name=None, definition=None, parents=None):
         Node.__init__(self, indent, to_explore=True) 
         self.name = name
+        self.parents = parents
         self.definition = definition
         self.sf = SBClass()
         self.sc = SBClass()
@@ -121,7 +123,8 @@ class ClassNode(Node):
         #self.types_class = {}
         #self.types_instance = {}
         #self.descriptions = []
-        self.docstring = []
+        self.block_before = []
+        self.block_after  = []
 
     def find_parent_class(self):
         return self
@@ -150,14 +153,16 @@ class ClassNode(Node):
 
 
 class FunctionNode(Node):
-    def __init__(self, indent=None, name=None, definition=None):
+    def __init__(self, indent=None, name=None, definition=None, arguments=None):
         Node.__init__(self, indent, to_explore=True) 
         self.name = name
+        self.arguments = arguments
         self.definition = definition
         #self.parameters = {}
         #self.types = {}
         #self.descriptions = []
-        self.docstring = []
+        self.block_before = []
+        self.block_after  = []
         self.sf = SBFunction()
         self.sc = SBFunction()
 

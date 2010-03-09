@@ -75,7 +75,7 @@ def set_option_parser(parser):
                       action='store',
                       type='string',
                       dest='language',
-                      help='Programming language of the source files')
+                      help='Programming language of the source files, only python is available')
     parser.add_option('-f',
                       '--filter',
                       action='store',
@@ -167,15 +167,21 @@ def handle_standard_io(parser):
 def handle_files(parser, files, dir_source, dir_dest):
     for filename in files:
         print '--------', filename, '--------'
+
+        # TODO: handle exceptions on file
         file = open(filename, 'r')
-        parser.read_file(file)
+        node_file = parser.read_file(file)
         file.close()
-        parser.print_file()  # what is this for?
-        parser.build_structure() # build doc from actual file
+
+        #parser.print_file()  # what is this for?
+        parser.build_structure(node_file) # build doc from actual file
+
         writer = Writer()
-        writer.write(parser.node_file)
+        writer.write(node_file)
         filepath = fs.transform_filepath(filename, dir_source, dir_dest)
         print 'path', filename, dir_source, dir_dest, filepath
+
+        # TODO: handle exceptions on file
         file = open(filepath, 'w')
         file.write(''.join(writer.buffer))
         file.close()

@@ -49,7 +49,7 @@ class_ = re.compile(
     class[ ]*?
     (?P<name>[_\w]*?)
         (\(
-        (?P<definition>[\s\,\w\=]*)
+        (?P<parents>[\s\,\w\=]*)
         \))?
     [\s]*?[:,][\s]*?
     """, re.VERBOSE | re.DOTALL)
@@ -61,7 +61,7 @@ function = re.compile(
     def[ ]*?
     (?P<name>[_\w]*?)
         (\(
-        (?P<definition>[\s\,\w\=]*)
+        (?P<arguments>[\s\,\w\=]*)
         \))?
     [\s]*?[:,][\s]*?
     """, re.VERBOSE | re.DOTALL)

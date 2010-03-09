@@ -28,7 +28,7 @@ from rst_reader import RestructuredTextReader
 from rst_writer import RestructuredTextWriter
 
 
-# Binary fields
+# Position fields
 POSITION_BEFORE = 0
 POSITION_AFTER = 1
 POSITION_WITHIN = 2
