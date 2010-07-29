@@ -1,13 +1,17 @@
 #!/usr/bin/env python
 
-from distutils.core import setup
+# For normal libs
+# from distutils.core import setup
+
+# For egg files
+from setuptools import setup
 
 setup(name='doge',
-      version='1.0',
+      version='0.1',
       description='Documentation generator',
       author='Emmanuel Goossaert',
-      author_email='',
+      author_email='emmanuel[at]goossaert[dot]com',
       url='',
-      packages=['src'],
+      packages=['doge'],
       )
 

@@ -1,7 +1,7 @@
 function! Doge_inner(...)
 python << endpython
 import vim
-import pydoge.main
+import doge.main
 
 # init
 (row_call, col_call) = vim.current.window.cursor
@@ -37,7 +37,7 @@ endfunction
 function! Doge_object(...)
 python << endpython
 import vim
-import pydoge.main
+import doge.main
 
 # init
 (row_call, col_call) = vim.current.window.cursor
@@ -88,7 +88,7 @@ if row_current < len(cb):
     buffer = [l + '\n' for l in cb[row_begin:row_end]]
 
     end = cb[row_end:]
-    buffer_new = pydoge.main.handle_buffer(buffer)
+    buffer_new = doge.main.handle_buffer(buffer)
 
     # Delete non necessary empty lines
     # TODO: fix added line when only 'def fct():' in file
@@ -126,7 +126,7 @@ endfunction
 function! Doge_file()
 python << endpython
 import vim
-import pydoge.main
+import doge.main
 
 # init
 (row_call, col_call) = vim.current.window.cursor
@@ -151,7 +151,7 @@ while row_current >= 0:
     
 # Update buffer
 buffer = [l + '\n' for l in cb]
-buffer_new = pydoge.main.handle_buffer(buffer)
+buffer_new = doge.main.handle_buffer(buffer)
 del cb[:]
 for line in buffer_new:
     for subline in line.splitlines():
@@ -186,6 +186,7 @@ vim.current.window.cursor = (row_stop, 0)
 endpython
 endfunction
 
+" Define vim aliases
 ab dgf call Doge_file()<cr>
 ab dgm call Doge_object("def")<cr>
 ab dgc call Doge_object("class")<cr>

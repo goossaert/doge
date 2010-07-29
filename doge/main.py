@@ -143,18 +143,18 @@ def handle_buffer(buffer):
     Node.lang = markup_input.lang
 
     parser = markup_input.parser
-    parser.read_file(buffer)
-    parser.print_file()  # what is this for?
-    parser.build_structure() # build doc from actual file
+    node = parser.read_file(buffer)
+    #parser.print_file()  # what is this for?
+    parser.build_structure(node) # build doc from actual file
     writer = Writer()
-    writer.write(parser.node_file)
+    writer.write(node)
 
     return writer.buffer
 
 
 def handle_standard_io(parser):
     parser.read_file(sys.stdin)
-    parser.print_file()  # what is this for?
+    #parser.print_file()  # what is this for?
     parser.build_structure() # build doc from actual file
     writer = Writer()
     writer.write(parser.node_file)
